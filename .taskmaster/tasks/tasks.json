@@ -130,7 +130,7 @@
         "testStrategy": "E2E tests for override application, streak protection during vacation verified.",
         "priority": "medium",
         "dependencies": [4, 6, 11],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -141,7 +141,7 @@
         "testStrategy": "Simulate events, verify delivery to correct users, unread counts accurate.",
         "priority": "low",
         "dependencies": [8, 9],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -152,7 +152,7 @@
         "testStrategy": "Performance audits with Lighthouse (aim 90+), response time measurements under load.",
         "priority": "medium",
         "dependencies": [7, 11],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {

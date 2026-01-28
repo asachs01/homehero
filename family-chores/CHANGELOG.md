@@ -95,6 +95,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `node-cron` dependency for scheduled jobs
 
 ### Changed
+- Updated API routes to use caching middleware
+  - `GET /api/dashboard` - cached per user for 30 seconds
+  - `GET /api/family/dashboard` - cached per household for 30 seconds
+  - `GET /api/users` - cached globally for 60 seconds
+- Added cache invalidation to mutation endpoints
+  - `POST /api/dashboard/complete/:taskId` - invalidates user cache
+  - `POST /api/dashboard/undo/:completionId` - invalidates user cache
+  - `POST /api/family/vacation-mode` - invalidates household cache
+  - `POST /api/family/sick-day/:userId` - invalidates household cache
+- Added `compression` dependency to package.json for response compression
 - Refactored `Completion.js` to use Balance model for all balance operations
   - `updateBalance()` now uses `Balance.add()` for consistent transaction recording
   - `undo()` now uses `Balance.reverse()` for consistent reversal handling
