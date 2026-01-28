@@ -1,0 +1,29 @@
+name: "Family Household Manager"
+version: "1.0.0"
+slug: family-chores
+description: "Self-hosted household management for families"
+arch:
+  - amd64
+  - armhf
+  - armv7
+  - aarch64
+ports:
+  3000/tcp: 3000
+ports_description:
+  3000/tcp: "Web interface"
+webui: "http://[HOST]:[PORT:3000]"
+startup: application
+boot: auto
+init: false
+options:
+  postgres_host: ""
+  postgres_port: 5432
+  postgres_db: "family_chores"
+  postgres_user: ""
+  postgres_password: ""
+schema:
+  postgres_host: str
+  postgres_port: int
+  postgres_db: str
+  postgres_user: str
+  postgres_password: password
