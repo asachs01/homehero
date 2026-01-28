@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Household Manager - Setup</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #E8F5E9 0%, #F3E5F5 50%, #E3F2FD 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    h1 {
+      color: #5D4E6D;
+      margin-bottom: 10px;
+      font-size: 1.8rem;
+      text-align: center;
+    }
+
+    .subtitle {
+      color: #7E57C2;
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 1rem;
+    }
+
+    /* Progress Stepper */
+    .progress-stepper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 30px;
+      gap: 8px;
+    }
+
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .step-circle.inactive {
+      background: #E0E0E0;
+      color: #9E9E9E;
+    }
+
+    .step-circle.active {
+      background: #7E57C2;
+      color: white;
+      box-shadow: 0 4px 15px rgba(126, 87, 194, 0.4);
+    }
+
+    .step-circle.completed {
+      background: #81C784;
+      color: white;
+    }
+
+    .step-line {
+      width: 40px;
+      height: 3px;
+      background: #E0E0E0;
+      transition: background 0.3s ease;
+    }
+
+    .step-line.completed {
+      background: #81C784;
+    }
+
+    /* Step Content */
+    .step-content {
+      display: none;
+    }
+
+    .step-content.active {
+      display: block;
+    }
+
+    .step-card {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .step-title {
+      color: #5D4E6D;
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .step-description {
+      color: #9E9E9E;
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 0.95rem;
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      color: #5D4E6D;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 15px 18px;
+      border: 2px solid #E0E0E0;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: #7E57C2;
+      box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.1);
+    }
+
+    .form-input.error {
+      border-color: #E53935;
+    }
+
+    .form-error {
+      color: #E53935;
+      font-size: 0.85rem;
+      margin-top: 6px;
+      display: none;
+    }
+
+    .form-error.visible {
+      display: block;
+    }
+
+    /* Avatar Grid */
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .avatar-option {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .avatar-option:hover {
+      transform: scale(1.1);
+    }
+
+    .avatar-option.selected {
+      border-color: #7E57C2;
+      box-shadow: 0 4px 15px rgba(126, 87, 194, 0.3);
+    }
+
+    /* PIN Input */
+    .pin-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .pin-digit {
+      width: 50px;
+      height: 60px;
+      border: 2px solid #E0E0E0;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .pin-digit:focus {
+      border-color: #7E57C2;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+      min-height: 54px;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #7E57C2, #9575CD);
+      color: white;
+      box-shadow: 0 4px 15px rgba(126, 87, 194, 0.3);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(126, 87, 194, 0.4);
+    }
+
+    .btn-primary:disabled {
+      background: #E0E0E0;
+      color: #9E9E9E;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #F5F5F5;
+      color: #5D4E6D;
+    }
+
+    .btn-secondary:hover {
+      background: #EEEEEE;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #66BB6A, #81C784);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 187, 106, 0.3);
+    }
+
+    .btn-success:hover {
+      box-shadow: 0 6px 20px rgba(102, 187, 106, 0.4);
+    }
+
+    .btn-outline {
+      background: white;
+      color: #7E57C2;
+      border: 2px solid #7E57C2;
+    }
+
+    .btn-outline:hover {
+      background: #F3E5F5;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .button-group .btn {
+      flex: 1;
+    }
+
+    /* Family Members List */
+    .family-members {
+      margin-top: 20px;
+    }
+
+    .member-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: #F8F9FA;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    .member-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .member-info {
+      flex: 1;
+    }
+
+    .member-name {
+      font-weight: 600;
+      color: #5D4E6D;
+    }
+
+    .member-role {
+      font-size: 0.85rem;
+      color: #9E9E9E;
+      text-transform: capitalize;
+    }
+
+    .member-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .member-badge.admin {
+      background: #E8F5E9;
+      color: #43A047;
+    }
+
+    .member-badge.child {
+      background: #E3F2FD;
+      color: #1976D2;
+    }
+
+    /* Completion Screen */
+    .completion-icon {
+      font-size: 5rem;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .completion-message {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .completion-message h2 {
+      color: #5D4E6D;
+      margin-bottom: 10px;
+    }
+
+    .completion-message p {
+      color: #9E9E9E;
+    }
+
+    /* Add Child Section */
+    .add-child-section {
+      border-top: 2px dashed #E0E0E0;
+      margin-top: 20px;
+      padding-top: 20px;
+    }
+
+    .add-child-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 15px;
+      background: #F8F9FA;
+      border: 2px dashed #C5CAE9;
+      border-radius: 12px;
+      color: #7E57C2;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .add-child-toggle:hover {
+      background: #EDE7F6;
+      border-color: #7E57C2;
+    }
+
+    .child-form {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .child-form.visible {
+      display: block;
+    }
+
+    /* Loading State */
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .avatar-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+      }
+
+      .avatar-option {
+        font-size: 1.4rem;
+      }
+
+      .step-card {
+        padding: 20px;
+      }
+
+      .pin-digit {
+        width: 45px;
+        height: 55px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to Family Chores</h1>
+    <p class="subtitle">Let's set up your household</p>
+
+    <!-- Progress Stepper -->
+    <div class="progress-stepper">
+      <div class="step-indicator">
+        <div class="step-circle active" id="step-circle-1">1</div>
+      </div>
+      <div class="step-line" id="step-line-1"></div>
+      <div class="step-indicator">
+        <div class="step-circle inactive" id="step-circle-2">2</div>
+      </div>
+      <div class="step-line" id="step-line-2"></div>
+      <div class="step-indicator">
+        <div class="step-circle inactive" id="step-circle-3">3</div>
+      </div>
+      <div class="step-line" id="step-line-3"></div>
+      <div class="step-indicator">
+        <div class="step-circle inactive" id="step-circle-4">4</div>
+      </div>
+    </div>
+
+    <!-- Step 1: Household Name -->
+    <div class="step-content active" id="step-1">
+      <div class="step-card">
+        <h2 class="step-title">Name Your Household</h2>
+        <p class="step-description">Give your family household a friendly name</p>
+
+        <div class="form-group">
+          <label class="form-label" for="household-name">Household Name</label>
+          <input
+            type="text"
+            id="household-name"
+            class="form-input"
+            placeholder="e.g., The Smith Family"
+            maxlength="255"
+            autocomplete="off"
+          >
+          <div class="form-error" id="household-name-error">Please enter a household name</div>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="btn-step-1-next" onclick="goToStep2()">
+          Continue
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Create Parent/Admin -->
+    <div class="step-content" id="step-2">
+      <div class="step-card">
+        <h2 class="step-title">Create Parent Account</h2>
+        <p class="step-description">Set up the first parent (admin) account</p>
+
+        <div class="form-group">
+          <label class="form-label" for="parent-name">Your Name</label>
+          <input
+            type="text"
+            id="parent-name"
+            class="form-input"
+            placeholder="e.g., Mom, Dad, or your name"
+            maxlength="255"
+            autocomplete="off"
+          >
+          <div class="form-error" id="parent-name-error">Please enter your name</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Choose Your Avatar</label>
+          <div class="avatar-grid" id="parent-avatar-grid">
+            <!-- Avatars loaded dynamically -->
+          </div>
+          <div class="form-error" id="parent-avatar-error">Please choose an avatar</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Create a PIN (4-6 digits)</label>
+          <div class="pin-container" id="parent-pin-container">
+            <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="0">
+            <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="1">
+            <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="2">
+            <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="3">
+            <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="4">
+            <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="5">
+          </div>
+          <div class="form-error" id="parent-pin-error">PIN must be 4-6 digits</div>
+        </div>
+
+        <div class="button-group">
+          <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
+          <button class="btn btn-primary" id="btn-step-2-next" onclick="goToStep3()">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Add Children -->
+    <div class="step-content" id="step-3">
+      <div class="step-card">
+        <h2 class="step-title">Add Family Members</h2>
+        <p class="step-description">Add children or other family members (optional)</p>
+
+        <div class="family-members" id="family-members-list">
+          <!-- Family members shown here -->
+        </div>
+
+        <div class="add-child-section">
+          <button class="add-child-toggle" id="add-child-toggle" onclick="toggleChildForm()">
+            + Add a Family Member
+          </button>
+
+          <div class="child-form" id="child-form">
+            <div class="form-group">
+              <label class="form-label" for="child-name">Name</label>
+              <input
+                type="text"
+                id="child-name"
+                class="form-input"
+                placeholder="e.g., Emma, Jake"
+                maxlength="255"
+                autocomplete="off"
+              >
+              <div class="form-error" id="child-name-error">Please enter a name</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Choose Avatar</label>
+              <div class="avatar-grid" id="child-avatar-grid">
+                <!-- Avatars loaded dynamically -->
+              </div>
+              <div class="form-error" id="child-avatar-error">Please choose an avatar</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">PIN (optional, 4-6 digits)</label>
+              <div class="pin-container" id="child-pin-container">
+                <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="0">
+                <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="1">
+                <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="2">
+                <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="3">
+                <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="4">
+                <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="5">
+              </div>
+            </div>
+
+            <div class="button-group">
+              <button class="btn btn-secondary" onclick="cancelChildForm()">Cancel</button>
+              <button class="btn btn-primary" id="btn-add-child" onclick="addChild()">Add Member</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-group" style="margin-top: 30px;">
+          <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
+          <button class="btn btn-success" id="btn-step-3-next" onclick="completeOnboarding()">
+            Finish Setup
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Complete -->
+    <div class="step-content" id="step-4">
+      <div class="step-card">
+        <div class="completion-icon">&#x1F389;</div>
+        <div class="completion-message">
+          <h2>You're All Set!</h2>
+          <p>Your household is ready. Start managing chores and having fun!</p>
+        </div>
+
+        <div class="family-members" id="final-family-list">
+          <!-- Final family list shown here -->
+        </div>
+
+        <button class="btn btn-success btn-block" style="margin-top: 30px;" onclick="goToLogin()">
+          Go to Login
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let currentStep = 1;
+    let householdId = null;
+    let avatars = [];
+    let familyMembers = [];
+    let selectedParentAvatar = null;
+    let selectedChildAvatar = null;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async function() {
+      await loadAvatars();
+      setupPinInputs('parent-pin-container');
+      setupPinInputs('child-pin-container');
+
+      // Check if onboarding already complete
+      await checkOnboardingStatus();
+    });
+
+    // Check onboarding status
+    async function checkOnboardingStatus() {
+      try {
+        const response = await fetch('/api/onboarding/status');
+        const data = await response.json();
+
+        if (data.complete) {
+          // Already onboarded, redirect to login
+          window.location.href = '/login.html';
+        } else if (data.hasHousehold) {
+          // Household exists but onboarding incomplete
+          householdId = data.householdId;
+          // Could resume from a later step if needed
+        }
+      } catch (err) {
+        console.error('Error checking onboarding status:', err);
+      }
+    }
+
+    // Load avatars from API
+    async function loadAvatars() {
+      try {
+        const response = await fetch('/api/avatars');
+        avatars = await response.json();
+        renderAvatarGrids();
+      } catch (err) {
+        console.error('Error loading avatars:', err);
+      }
+    }
+
+    // Create avatar element safely using DOM methods
+    function createAvatarElement(avatar, targetId, selectFn) {
+      const div = document.createElement('div');
+      div.className = 'avatar-option';
+      div.style.backgroundColor = avatar.color;
+      div.setAttribute('data-avatar-id', avatar.id);
+      div.textContent = avatar.emoji;
+      div.onclick = function() { selectFn(avatar.id); };
+      return div;
+    }
+
+    // Render avatar grids
+    function renderAvatarGrids() {
+      const parentGrid = document.getElementById('parent-avatar-grid');
+      const childGrid = document.getElementById('child-avatar-grid');
+
+      // Clear existing content safely
+      while (parentGrid.firstChild) {
+        parentGrid.removeChild(parentGrid.firstChild);
+      }
+      while (childGrid.firstChild) {
+        childGrid.removeChild(childGrid.firstChild);
+      }
+
+      avatars.forEach(function(avatar) {
+        parentGrid.appendChild(createAvatarElement(avatar, 'parent', selectParentAvatar));
+        childGrid.appendChild(createAvatarElement(avatar, 'child', selectChildAvatar));
+      });
+    }
+
+    // Select parent avatar
+    function selectParentAvatar(avatarId) {
+      selectedParentAvatar = avatarId;
+      document.querySelectorAll('#parent-avatar-grid .avatar-option').forEach(function(el) {
+        el.classList.toggle('selected', el.dataset.avatarId === avatarId);
+      });
+      hideError('parent-avatar-error');
+    }
+
+    // Select child avatar
+    function selectChildAvatar(avatarId) {
+      selectedChildAvatar = avatarId;
+      document.querySelectorAll('#child-avatar-grid .avatar-option').forEach(function(el) {
+        el.classList.toggle('selected', el.dataset.avatarId === avatarId);
+      });
+      hideError('child-avatar-error');
+    }
+
+    // Setup PIN input behavior
+    function setupPinInputs(containerId) {
+      const container = document.getElementById(containerId);
+      const inputs = container.querySelectorAll('.pin-digit');
+
+      inputs.forEach(function(input, index) {
+        input.addEventListener('input', function(e) {
+          // Only allow digits
+          this.value = this.value.replace(/[^0-9]/g, '');
+
+          if (this.value && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          }
+        });
+
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Backspace' && !this.value && index > 0) {
+            inputs[index - 1].focus();
+          }
+        });
+
+        input.addEventListener('paste', function(e) {
+          e.preventDefault();
+          const paste = (e.clipboardData || window.clipboardData).getData('text');
+          const digits = paste.replace(/[^0-9]/g, '').slice(0, 6);
+
+          digits.split('').forEach(function(digit, i) {
+            if (inputs[index + i]) {
+              inputs[index + i].value = digit;
+            }
+          });
+
+          const nextIndex = Math.min(index + digits.length, inputs.length - 1);
+          inputs[nextIndex].focus();
+        });
+      });
+    }
+
+    // Get PIN from container
+    function getPin(containerId) {
+      const container = document.getElementById(containerId);
+      const inputs = container.querySelectorAll('.pin-digit');
+      let pin = '';
+      inputs.forEach(function(input) {
+        pin += input.value;
+      });
+      return pin;
+    }
+
+    // Clear PIN inputs
+    function clearPin(containerId) {
+      const container = document.getElementById(containerId);
+      const inputs = container.querySelectorAll('.pin-digit');
+      inputs.forEach(function(input) {
+        input.value = '';
+      });
+      if (inputs.length > 0) {
+        inputs[0].focus();
+      }
+    }
+
+    // Show error
+    function showError(errorId, message) {
+      const errorEl = document.getElementById(errorId);
+      if (message) {
+        errorEl.textContent = message;
+      }
+      errorEl.classList.add('visible');
+    }
+
+    // Hide error
+    function hideError(errorId) {
+      const errorEl = document.getElementById(errorId);
+      errorEl.classList.remove('visible');
+    }
+
+    // Update step progress
+    function updateStepProgress(step) {
+      for (let i = 1; i <= 4; i++) {
+        const circle = document.getElementById('step-circle-' + i);
+        const line = document.getElementById('step-line-' + (i - 1));
+
+        if (i < step) {
+          circle.className = 'step-circle completed';
+          circle.textContent = '\u2713';
+        } else if (i === step) {
+          circle.className = 'step-circle active';
+          circle.textContent = i;
+        } else {
+          circle.className = 'step-circle inactive';
+          circle.textContent = i;
+        }
+
+        if (line) {
+          line.className = i < step ? 'step-line completed' : 'step-line';
+        }
+      }
+    }
+
+    // Go to specific step
+    function goToStep(step) {
+      document.querySelectorAll('.step-content').forEach(function(el) {
+        el.classList.remove('active');
+      });
+      document.getElementById('step-' + step).classList.add('active');
+      currentStep = step;
+      updateStepProgress(step);
+    }
+
+    // Set button loading state
+    function setButtonLoading(btn, isLoading) {
+      if (isLoading) {
+        btn.disabled = true;
+        btn.setAttribute('data-original-text', btn.textContent);
+        // Clear existing content
+        while (btn.firstChild) {
+          btn.removeChild(btn.firstChild);
+        }
+        const spinner = document.createElement('span');
+        spinner.className = 'loading-spinner';
+        btn.appendChild(spinner);
+      } else {
+        btn.disabled = false;
+        const originalText = btn.getAttribute('data-original-text') || 'Continue';
+        // Clear existing content
+        while (btn.firstChild) {
+          btn.removeChild(btn.firstChild);
+        }
+        btn.textContent = originalText;
+      }
+    }
+
+    // Step 1 -> Step 2: Create household
+    async function goToStep2() {
+      const nameInput = document.getElementById('household-name');
+      const name = nameInput.value.trim();
+
+      if (!name) {
+        showError('household-name-error');
+        nameInput.classList.add('error');
+        nameInput.focus();
+        return;
+      }
+
+      hideError('household-name-error');
+      nameInput.classList.remove('error');
+
+      const btn = document.getElementById('btn-step-1-next');
+      setButtonLoading(btn, true);
+
+      try {
+        const response = await fetch('/api/onboarding/household', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create household');
+        }
+
+        householdId = data.id;
+        goToStep(2);
+      } catch (err) {
+        console.error('Error creating household:', err);
+        showError('household-name-error', err.message);
+        nameInput.classList.add('error');
+      } finally {
+        setButtonLoading(btn, false);
+      }
+    }
+
+    // Step 2 -> Step 3: Create parent
+    async function goToStep3() {
+      const nameInput = document.getElementById('parent-name');
+      const name = nameInput.value.trim();
+      const pin = getPin('parent-pin-container');
+
+      let hasError = false;
+
+      if (!name) {
+        showError('parent-name-error');
+        nameInput.classList.add('error');
+        hasError = true;
+      } else {
+        hideError('parent-name-error');
+        nameInput.classList.remove('error');
+      }
+
+      if (!selectedParentAvatar) {
+        showError('parent-avatar-error');
+        hasError = true;
+      } else {
+        hideError('parent-avatar-error');
+      }
+
+      if (pin.length < 4) {
+        showError('parent-pin-error');
+        hasError = true;
+      } else {
+        hideError('parent-pin-error');
+      }
+
+      if (hasError) {
+        return;
+      }
+
+      const btn = document.getElementById('btn-step-2-next');
+      setButtonLoading(btn, true);
+
+      try {
+        const response = await fetch('/api/onboarding/user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            householdId: householdId,
+            name: name,
+            role: 'parent',
+            pin: pin,
+            avatar: selectedParentAvatar
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create user');
+        }
+
+        familyMembers.push(data);
+        renderFamilyMembers();
+        goToStep(3);
+      } catch (err) {
+        console.error('Error creating parent:', err);
+        showError('parent-pin-error', err.message);
+      } finally {
+        setButtonLoading(btn, false);
+      }
+    }
+
+    // Create member card element safely using DOM methods
+    function createMemberCard(member) {
+      const card = document.createElement('div');
+      card.className = 'member-card';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'member-avatar';
+      avatar.style.backgroundColor = member.avatarColor || '#E0E0E0';
+      avatar.textContent = member.avatarEmoji || '\u{1F464}';
+
+      const info = document.createElement('div');
+      info.className = 'member-info';
+
+      const name = document.createElement('div');
+      name.className = 'member-name';
+      name.textContent = member.name;
+
+      const role = document.createElement('div');
+      role.className = 'member-role';
+      role.textContent = member.role;
+
+      info.appendChild(name);
+      info.appendChild(role);
+
+      const badge = document.createElement('span');
+      badge.className = 'member-badge ' + (member.role === 'parent' ? 'admin' : 'child');
+      badge.textContent = member.role === 'parent' ? 'Admin' : 'Member';
+
+      card.appendChild(avatar);
+      card.appendChild(info);
+      card.appendChild(badge);
+
+      return card;
+    }
+
+    // Render family members list
+    function renderFamilyMembers() {
+      const list = document.getElementById('family-members-list');
+
+      // Clear existing content safely
+      while (list.firstChild) {
+        list.removeChild(list.firstChild);
+      }
+
+      familyMembers.forEach(function(member) {
+        list.appendChild(createMemberCard(member));
+      });
+    }
+
+    // Toggle child form
+    function toggleChildForm() {
+      const form = document.getElementById('child-form');
+      const toggle = document.getElementById('add-child-toggle');
+
+      form.classList.add('visible');
+      toggle.style.display = 'none';
+
+      // Reset form
+      document.getElementById('child-name').value = '';
+      selectedChildAvatar = null;
+      clearPin('child-pin-container');
+
+      document.querySelectorAll('#child-avatar-grid .avatar-option').forEach(function(el) {
+        el.classList.remove('selected');
+      });
+    }
+
+    // Cancel child form
+    function cancelChildForm() {
+      const form = document.getElementById('child-form');
+      const toggle = document.getElementById('add-child-toggle');
+
+      form.classList.remove('visible');
+      toggle.style.display = 'flex';
+    }
+
+    // Add child
+    async function addChild() {
+      const nameInput = document.getElementById('child-name');
+      const name = nameInput.value.trim();
+      const pin = getPin('child-pin-container');
+
+      let hasError = false;
+
+      if (!name) {
+        showError('child-name-error');
+        nameInput.classList.add('error');
+        hasError = true;
+      } else {
+        hideError('child-name-error');
+        nameInput.classList.remove('error');
+      }
+
+      if (!selectedChildAvatar) {
+        showError('child-avatar-error');
+        hasError = true;
+      } else {
+        hideError('child-avatar-error');
+      }
+
+      if (hasError) {
+        return;
+      }
+
+      const btn = document.getElementById('btn-add-child');
+      setButtonLoading(btn, true);
+
+      try {
+        const body = {
+          householdId: householdId,
+          name: name,
+          role: 'child',
+          avatar: selectedChildAvatar
+        };
+
+        // Only include PIN if provided (4+ digits)
+        if (pin.length >= 4) {
+          body.pin = pin;
+        }
+
+        const response = await fetch('/api/onboarding/user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to add member');
+        }
+
+        familyMembers.push(data);
+        renderFamilyMembers();
+        cancelChildForm();
+      } catch (err) {
+        console.error('Error adding child:', err);
+        showError('child-name-error', err.message);
+      } finally {
+        setButtonLoading(btn, false);
+      }
+    }
+
+    // Complete onboarding
+    function completeOnboarding() {
+      // Render final family list
+      const finalList = document.getElementById('final-family-list');
+
+      // Clear existing content safely
+      while (finalList.firstChild) {
+        finalList.removeChild(finalList.firstChild);
+      }
+
+      familyMembers.forEach(function(member) {
+        finalList.appendChild(createMemberCard(member));
+      });
+
+      goToStep(4);
+    }
+
+    // Go to login
+    function goToLogin() {
+      window.location.href = '/login.html';
+    }
+  </script>
+</body>
+</html>

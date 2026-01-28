@@ -5,6 +5,8 @@ const { initialize } = require('./db/init');
 const { testConnection, getPoolStatus } = require('./db/pool');
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
+const routineRoutes = require('./routes/routines');
+const onboardingRoutes = require('./routes/onboarding');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,6 +50,12 @@ app.use(authRoutes);
 
 // Task routes
 app.use(taskRoutes);
+
+// Routine routes
+app.use(routineRoutes);
+
+// Onboarding routes
+app.use(onboardingRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -31,7 +31,7 @@
         "testStrategy": "Test successful login, invalid PIN rejection, session persistence. Frontend e2e tests with Playwright simulating taps.",
         "priority": "high",
         "dependencies": [2],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -53,7 +53,7 @@
         "testStrategy": "API tests with Supertest: create task, verify schedule serialization, list/filter by user. Permission tests for non-admins.",
         "priority": "high",
         "dependencies": [2],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
