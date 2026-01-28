@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS balance_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     amount DECIMAL(10, 2) NOT NULL,
-    type VARCHAR(50) NOT NULL CHECK (type IN ('earned', 'spent', 'adjustment', 'payout')),
+    type VARCHAR(50) NOT NULL CHECK (type IN ('earned', 'spent', 'adjustment', 'payout', 'bonus')),
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

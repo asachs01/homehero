@@ -8,6 +8,9 @@ const taskRoutes = require('./routes/tasks');
 const routineRoutes = require('./routes/routines');
 const onboardingRoutes = require('./routes/onboarding');
 const dashboardRoutes = require('./routes/dashboard');
+const balanceRoutes = require('./routes/balance');
+const familyRoutes = require('./routes/family');
+const { startStreakCalculator } = require('./jobs/streakCalculator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -61,6 +64,12 @@ app.use(onboardingRoutes);
 // Dashboard routes
 app.use(dashboardRoutes);
 
+// Balance routes
+app.use(balanceRoutes);
+
+// Family dashboard routes
+app.use(familyRoutes);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
@@ -81,6 +90,12 @@ async function start() {
     const dbInitialized = await initialize();
     if (!dbInitialized) {
       console.warn('Warning: Database initialization failed, starting without database');
+    }
+
+    // Start the streak calculator cron job (runs daily at midnight)
+    if (dbInitialized) {
+      startStreakCalculator();
+      console.log('Streak calculator job scheduled');
     }
 
     app.listen(PORT, () => {

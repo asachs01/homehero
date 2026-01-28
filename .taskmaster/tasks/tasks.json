@@ -42,7 +42,7 @@
         "testStrategy": "Manual walkthrough verification, database checks for correct user/household relations post-onboarding.",
         "priority": "high",
         "dependencies": [3],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -64,7 +64,7 @@
         "testStrategy": "Verify routine creation with ordered tasks, API returns correct sequence. Test reordering updates positions correctly.",
         "priority": "medium",
         "dependencies": [5],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -75,7 +75,7 @@
         "testStrategy": "Visual regression tests with Playwright, responsive checks on 10in tablet viewport (1024x768 landscape). Tap simulation for completion flow.",
         "priority": "high",
         "dependencies": [3, 6],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -86,7 +86,7 @@
         "testStrategy": "Test completion recording, undo functionality, duplicate prevention. Load test 100 concurrent completions (<200ms).",
         "priority": "high",
         "dependencies": [5, 7],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
