@@ -29,4 +29,4 @@ After starting the add-on:
 
 ## Support
 
-For issues and feature requests, please open an issue on the [GitHub repository](https://github.com/asachs01/homeassistantChores).
+For issues and feature requests, please open an issue on the [GitHub repository](https://github.com/asachs01/homehero).

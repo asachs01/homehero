@@ -12,8 +12,8 @@ Please be respectful and constructive in all interactions. We're building softwa
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/asachs01/homeassistantChores.git
-   cd homeassistantChores
+   git clone https://github.com/asachs01/homehero.git
+   cd homehero
    ```
 
 2. **Install Node.js dependencies**

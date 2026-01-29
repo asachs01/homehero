@@ -15,7 +15,7 @@ That's it! The add-on is self-contained with an embedded SQLite database - no ex
 3. Select **Repositories**
 4. Add the HomeHero repository URL:
    ```
-   https://github.com/asachs01/homeassistantChores
+   https://github.com/asachs01/homehero
    ```
 5. Click **Add**
 6. The repository will be scanned and the add-on will appear in the store
@@ -162,7 +162,7 @@ If you encounter issues:
 
 1. Check the [Troubleshooting](#troubleshooting) section above
 2. Review the add-on logs for specific error messages
-3. Search existing [GitHub issues](https://github.com/asachs01/homeassistantChores/issues)
+3. Search existing [GitHub issues](https://github.com/asachs01/homehero/issues)
 4. Open a new issue with:
    - Home Assistant version
    - Add-on version
