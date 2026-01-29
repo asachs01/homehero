@@ -2,7 +2,8 @@
  * Task model for database operations
  */
 
-const { query } = require('../db/pool');
+const crypto = require('crypto');
+const { getDb } = require('../db/pool');
 const { isScheduledForDate } = require('../utils/schedule');
 
 class Task {
@@ -10,9 +11,9 @@ class Task {
    * Create a new task
    * @param {string} householdId - The household UUID
    * @param {Object} data - Task data
-   * @returns {Promise<Object>} The created task
+   * @returns {Object} The created task
    */
-  static async create(householdId, data) {
+  static create(householdId, data) {
     const {
       name,
       description = null,
@@ -24,19 +25,24 @@ class Task {
       assignedUsers = []
     } = data;
 
-    const result = await query(
-      `INSERT INTO tasks (household_id, name, description, icon, type, dollar_value, schedule, time_window)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [householdId, name, description, icon, type, dollarValue, JSON.stringify(schedule), JSON.stringify(timeWindow)]
-    );
+    const db = getDb();
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
 
-    const task = Task.formatTask(result.rows[0]);
+    db.prepare(
+      `INSERT INTO tasks (id, household_id, name, description, icon, type, dollar_value, schedule, time_window, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, householdId, name, description, icon, type, dollarValue, JSON.stringify(schedule), JSON.stringify(timeWindow), now);
+
+    const row = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+    const task = Task.formatTask(row);
 
     // Assign users if provided
     if (assignedUsers.length > 0) {
-      await Task.assignUsers(task.id, assignedUsers);
+      Task.assignUsers(task.id, assignedUsers);
       task.assignedUsers = assignedUsers;
+    } else {
+      task.assignedUsers = [];
     }
 
     return task;
@@ -46,42 +52,38 @@ class Task {
    * Find all tasks for a household with optional filters
    * @param {string} householdId - The household UUID
    * @param {Object} filters - Optional filters { type, userId }
-   * @returns {Promise<Object[]>} Array of tasks
+   * @returns {Object[]} Array of tasks
    */
-  static async findAll(householdId, filters = {}) {
+  static findAll(householdId, filters = {}) {
+    const db = getDb();
     let sql = `
       SELECT DISTINCT t.*
       FROM tasks t
       LEFT JOIN task_assignments ta ON t.id = ta.task_id
-      WHERE t.household_id = $1
+      WHERE t.household_id = ?
     `;
     const params = [householdId];
-    let paramIndex = 2;
 
     if (filters.type) {
-      sql += ` AND t.type = $${paramIndex}`;
+      sql += ' AND t.type = ?';
       params.push(filters.type);
-      paramIndex++;
     }
 
     if (filters.userId) {
-      sql += ` AND ta.user_id = $${paramIndex}`;
+      sql += ' AND ta.user_id = ?';
       params.push(filters.userId);
-      paramIndex++;
     }
 
     sql += ' ORDER BY t.created_at DESC';
 
-    const result = await query(sql, params);
+    const rows = db.prepare(sql).all(...params);
 
     // Fetch assigned users for each task
-    const tasks = await Promise.all(
-      result.rows.map(async (row) => {
-        const task = Task.formatTask(row);
-        task.assignedUsers = await Task.getAssignedUsers(task.id);
-        return task;
-      })
-    );
+    const tasks = rows.map(row => {
+      const task = Task.formatTask(row);
+      task.assignedUsers = Task.getAssignedUsers(task.id);
+      return task;
+    });
 
     return tasks;
   }
@@ -89,20 +91,18 @@ class Task {
   /**
    * Find a task by ID
    * @param {string} id - The task UUID
-   * @returns {Promise<Object|null>} The task or null if not found
+   * @returns {Object|null} The task or null if not found
    */
-  static async findById(id) {
-    const result = await query(
-      'SELECT * FROM tasks WHERE id = $1',
-      [id]
-    );
+  static findById(id) {
+    const db = getDb();
+    const row = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
 
-    if (result.rows.length === 0) {
+    if (!row) {
       return null;
     }
 
-    const task = Task.formatTask(result.rows[0]);
-    task.assignedUsers = await Task.getAssignedUsers(task.id);
+    const task = Task.formatTask(row);
+    task.assignedUsers = Task.getAssignedUsers(task.id);
     return task;
   }
 
@@ -110,13 +110,13 @@ class Task {
    * Update a task
    * @param {string} id - The task UUID
    * @param {Object} data - Fields to update
-   * @returns {Promise<Object|null>} The updated task or null if not found
+   * @returns {Object|null} The updated task or null if not found
    */
-  static async update(id, data) {
+  static update(id, data) {
+    const db = getDb();
     // Build dynamic update query
     const updates = [];
     const params = [];
-    let paramIndex = 1;
 
     const fieldMap = {
       name: 'name',
@@ -135,9 +135,8 @@ class Task {
         if (key === 'schedule' || key === 'timeWindow') {
           value = JSON.stringify(value);
         }
-        updates.push(`${column} = $${paramIndex}`);
+        updates.push(`${column} = ?`);
         params.push(value);
-        paramIndex++;
       }
     }
 
@@ -150,27 +149,26 @@ class Task {
 
     if (updates.length > 0) {
       params.push(id);
-      const result = await query(
-        `UPDATE tasks SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-        params
-      );
+      const info = db.prepare(
+        `UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`
+      ).run(...params);
 
-      if (result.rows.length === 0) {
+      if (info.changes === 0) {
         return null;
       }
 
-      task = Task.formatTask(result.rows[0]);
+      task = Task.findById(id);
     } else {
-      task = await Task.findById(id);
+      task = Task.findById(id);
       if (!task) return null;
     }
 
     // Update assigned users if provided
     if (data.assignedUsers !== undefined) {
-      await Task.assignUsers(id, data.assignedUsers);
+      Task.assignUsers(id, data.assignedUsers);
       task.assignedUsers = data.assignedUsers;
     } else {
-      task.assignedUsers = await Task.getAssignedUsers(id);
+      task.assignedUsers = Task.getAssignedUsers(id);
     }
 
     return task;
@@ -179,78 +177,74 @@ class Task {
   /**
    * Delete a task
    * @param {string} id - The task UUID
-   * @returns {Promise<boolean>} True if deleted, false if not found
+   * @returns {boolean} True if deleted, false if not found
    */
-  static async delete(id) {
-    const result = await query(
-      'DELETE FROM tasks WHERE id = $1 RETURNING id',
-      [id]
-    );
-
-    return result.rows.length > 0;
+  static delete(id) {
+    const db = getDb();
+    const info = db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+    return info.changes > 0;
   }
 
   /**
    * Assign users to a task (replaces existing assignments)
    * @param {string} taskId - The task UUID
    * @param {string[]} userIds - Array of user UUIDs
-   * @returns {Promise<void>}
    */
-  static async assignUsers(taskId, userIds) {
+  static assignUsers(taskId, userIds) {
+    const db = getDb();
+
     // Remove existing assignments
-    await query(
-      'DELETE FROM task_assignments WHERE task_id = $1',
-      [taskId]
-    );
+    db.prepare('DELETE FROM task_assignments WHERE task_id = ?').run(taskId);
 
     // Add new assignments
     if (userIds.length > 0) {
-      const values = userIds.map((_, i) => `($1, $${i + 2})`).join(', ');
-      await query(
-        `INSERT INTO task_assignments (task_id, user_id) VALUES ${values}`,
-        [taskId, ...userIds]
+      const insertStmt = db.prepare(
+        'INSERT INTO task_assignments (task_id, user_id) VALUES (?, ?)'
       );
+      for (const userId of userIds) {
+        insertStmt.run(taskId, userId);
+      }
     }
   }
 
   /**
    * Get all users assigned to a task
    * @param {string} taskId - The task UUID
-   * @returns {Promise<string[]>} Array of user UUIDs
+   * @returns {string[]} Array of user UUIDs
    */
-  static async getAssignedUsers(taskId) {
-    const result = await query(
-      'SELECT user_id FROM task_assignments WHERE task_id = $1',
-      [taskId]
-    );
+  static getAssignedUsers(taskId) {
+    const db = getDb();
+    const rows = db.prepare(
+      'SELECT user_id FROM task_assignments WHERE task_id = ?'
+    ).all(taskId);
 
-    return result.rows.map(row => row.user_id);
+    return rows.map(row => row.user_id);
   }
 
   /**
    * Get tasks assigned to a user for a specific date
    * @param {string} userId - The user UUID
    * @param {Date|string} date - The date to check (defaults to today)
-   * @returns {Promise<Object[]>} Array of tasks scheduled for the date
+   * @returns {Object[]} Array of tasks scheduled for the date
    */
-  static async getTasksForUser(userId, date = new Date()) {
-    const result = await query(
+  static getTasksForUser(userId, date = new Date()) {
+    const db = getDb();
+    const rows = db.prepare(
       `SELECT t.*
        FROM tasks t
        JOIN task_assignments ta ON t.id = ta.task_id
-       WHERE ta.user_id = $1
-       ORDER BY t.created_at DESC`,
-      [userId]
-    );
+       WHERE ta.user_id = ?
+       ORDER BY t.created_at DESC`
+    ).all(userId);
 
     // Filter tasks by schedule
-    const tasks = result.rows
+    const tasks = rows
       .map(row => Task.formatTask(row))
       .filter(task => isScheduledForDate(task, date));
 
     // Fetch assigned users for each task
     for (const task of tasks) {
-      task.assignedUsers = await Task.getAssignedUsers(task.id);
+      task.assignedUsers = Task.getAssignedUsers(task.id);
     }
 
     return tasks;
@@ -259,15 +253,12 @@ class Task {
   /**
    * Get the household ID for a task
    * @param {string} taskId - The task UUID
-   * @returns {Promise<string|null>} The household UUID or null
+   * @returns {string|null} The household UUID or null
    */
-  static async getHouseholdId(taskId) {
-    const result = await query(
-      'SELECT household_id FROM tasks WHERE id = $1',
-      [taskId]
-    );
-
-    return result.rows.length > 0 ? result.rows[0].household_id : null;
+  static getHouseholdId(taskId) {
+    const db = getDb();
+    const row = db.prepare('SELECT household_id FROM tasks WHERE id = ?').get(taskId);
+    return row ? row.household_id : null;
   }
 
   /**
@@ -276,6 +267,25 @@ class Task {
    * @returns {Object} Formatted task object
    */
   static formatTask(row) {
+    let schedule = row.schedule;
+    let timeWindow = row.time_window;
+
+    // Parse JSON if stored as string
+    if (typeof schedule === 'string') {
+      try {
+        schedule = JSON.parse(schedule);
+      } catch (e) {
+        schedule = [];
+      }
+    }
+    if (typeof timeWindow === 'string') {
+      try {
+        timeWindow = JSON.parse(timeWindow);
+      } catch (e) {
+        timeWindow = null;
+      }
+    }
+
     return {
       id: row.id,
       householdId: row.household_id,
@@ -284,8 +294,8 @@ class Task {
       icon: row.icon,
       type: row.type,
       dollarValue: parseFloat(row.dollar_value) || 0,
-      schedule: row.schedule || [],
-      timeWindow: row.time_window,
+      schedule: schedule || [],
+      timeWindow: timeWindow,
       createdAt: row.created_at
     };
   }

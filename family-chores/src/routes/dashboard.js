@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { query } = require('../db/pool');
+const { getDb } = require('../db/pool');
 const Routine = require('../models/Routine');
 const Task = require('../models/Task');
 const Completion = require('../models/Completion');
@@ -32,10 +32,10 @@ router.get('/api/dashboard', requireAuth, cacheDashboard, async (req, res) => {
     const todayStr = today.toISOString().split('T')[0];
 
     // Get user's routines
-    const routines = await Routine.findAll(householdId, userId);
+    const routines = Routine.findAll(householdId, userId);
 
     // Get today's completions for this user
-    const completions = await Completion.findByUserAndDate(userId, today);
+    const completions = Completion.findByUserAndDate(userId, today);
     const completedTaskIds = new Set(completions.map(c => c.taskId));
 
     // Build routine tasks for today
@@ -68,7 +68,7 @@ router.get('/api/dashboard', requireAuth, cacheDashboard, async (req, res) => {
           isCompleted,
           completionId: completion?.id || null,
           completedAt: completion?.completedAt || null,
-          canUndo: completion ? await Completion.canUndo(completion.id) : false
+          canUndo: completion ? Completion.canUndo(completion.id) : false
         });
       }
     }
@@ -77,22 +77,22 @@ router.get('/api/dashboard', requireAuth, cacheDashboard, async (req, res) => {
     routineTasks.sort((a, b) => a.position - b.position);
 
     // Get bonus tasks (type='one-time' or unassigned tasks available for claim)
-    const bonusTasks = await getBonusTasks(householdId, userId, today, completedTaskIds, completions);
+    const bonusTasks = getBonusTasks(householdId, userId, today, completedTaskIds, completions);
 
     // Get streak data
     let streakCount = 0;
     if (primaryRoutineId) {
-      const streakData = await Completion.getStreakData(userId, primaryRoutineId);
+      const streakData = Completion.getStreakData(userId, primaryRoutineId);
       streakCount = streakData.currentCount;
     }
 
     // Get total streak across all routines as fallback
     if (streakCount === 0) {
-      streakCount = await Completion.getTotalStreakCount(userId);
+      streakCount = Completion.getTotalStreakCount(userId);
     }
 
     // Get current balance
-    const balance = await Completion.getBalance(userId);
+    const balance = Completion.getBalance(userId);
 
     // Calculate completion status for today
     const totalRoutineTasks = routineTasks.length;
@@ -101,7 +101,7 @@ router.get('/api/dashboard', requireAuth, cacheDashboard, async (req, res) => {
 
     // Update streak if routine is complete
     if (routineComplete && primaryRoutineId) {
-      const updatedStreak = await Completion.updateStreak(userId, primaryRoutineId, today);
+      const updatedStreak = Completion.updateStreak(userId, primaryRoutineId, today);
       streakCount = updatedStreak.currentCount;
     }
 
@@ -146,7 +146,7 @@ router.post('/api/dashboard/complete/:taskId', requireAuth, async (req, res) => 
     const today = new Date();
 
     // Verify task exists and user has access
-    const task = await Task.findById(taskId);
+    const task = Task.findById(taskId);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -156,7 +156,7 @@ router.post('/api/dashboard/complete/:taskId', requireAuth, async (req, res) => 
     }
 
     // Check if already completed today
-    const existing = await Completion.isCompleted(taskId, userId, today);
+    const existing = Completion.isCompleted(taskId, userId, today);
     if (existing) {
       return res.status(400).json({
         error: 'Task already completed today',
@@ -165,13 +165,13 @@ router.post('/api/dashboard/complete/:taskId', requireAuth, async (req, res) => 
     }
 
     // Create completion
-    const completion = await Completion.create(taskId, userId, today);
+    const completion = Completion.create(taskId, userId, today);
 
     // Invalidate dashboard cache for this user
     invalidateUser(userId);
 
     // Get updated balance
-    const balance = await Completion.getBalance(userId);
+    const balance = Completion.getBalance(userId);
 
     res.status(201).json({
       completion,
@@ -202,7 +202,7 @@ router.post('/api/dashboard/undo/:completionId', requireAuth, async (req, res) =
     const userId = req.user.userId;
 
     // Verify completion exists and belongs to user
-    const completion = await Completion.findById(completionId);
+    const completion = Completion.findById(completionId);
     if (!completion) {
       return res.status(404).json({ error: 'Completion not found' });
     }
@@ -212,7 +212,7 @@ router.post('/api/dashboard/undo/:completionId', requireAuth, async (req, res) =
     }
 
     // Attempt undo
-    const result = await Completion.undo(completionId);
+    const result = Completion.undo(completionId);
 
     if (!result.success) {
       return res.status(400).json({ error: result.error });
@@ -222,7 +222,7 @@ router.post('/api/dashboard/undo/:completionId', requireAuth, async (req, res) =
     invalidateUser(userId);
 
     // Get updated balance
-    const balance = await Completion.getBalance(userId);
+    const balance = Completion.getBalance(userId);
 
     res.json({
       success: true,
@@ -244,22 +244,22 @@ router.post('/api/dashboard/undo/:completionId', requireAuth, async (req, res) =
  * @param {Date} date - The date to check
  * @param {Set} completedTaskIds - Set of completed task IDs
  * @param {Array} completions - Array of completion objects
- * @returns {Promise<Array>} Array of bonus tasks
+ * @returns {Array} Array of bonus tasks
  */
-async function getBonusTasks(householdId, userId, date, completedTaskIds, completions) {
+function getBonusTasks(householdId, userId, date, completedTaskIds, completions) {
+  const db = getDb();
   // Get all one-time tasks for the household that are scheduled for today
-  const result = await query(
-    `SELECT t.*
-     FROM tasks t
-     WHERE t.household_id = $1
-     AND t.type = 'one-time'
-     ORDER BY t.dollar_value DESC, t.name ASC`,
-    [householdId]
-  );
+  const rows = db.prepare(
+    `SELECT *
+     FROM tasks
+     WHERE household_id = ?
+     AND type = 'one-time'
+     ORDER BY dollar_value DESC, name ASC`
+  ).all(householdId);
 
   const bonusTasks = [];
 
-  for (const row of result.rows) {
+  for (const row of rows) {
     const task = Task.formatTask ? Task.formatTask(row) : {
       id: row.id,
       householdId: row.household_id,
@@ -268,8 +268,8 @@ async function getBonusTasks(householdId, userId, date, completedTaskIds, comple
       icon: row.icon,
       type: row.type,
       dollarValue: parseFloat(row.dollar_value) || 0,
-      schedule: row.schedule || [],
-      timeWindow: row.time_window,
+      schedule: typeof row.schedule === 'string' ? JSON.parse(row.schedule || '[]') : (row.schedule || []),
+      timeWindow: typeof row.time_window === 'string' ? JSON.parse(row.time_window || 'null') : row.time_window,
       createdAt: row.created_at
     };
 
@@ -279,7 +279,7 @@ async function getBonusTasks(householdId, userId, date, completedTaskIds, comple
     }
 
     // Check if already claimed/completed by anyone today
-    const taskCompletions = await Completion.findByTaskAndDate(task.id, date);
+    const taskCompletions = Completion.findByTaskAndDate(task.id, date);
     const alreadyClaimed = taskCompletions.length > 0;
 
     // Check if completed by current user
@@ -297,7 +297,7 @@ async function getBonusTasks(householdId, userId, date, completedTaskIds, comple
       claimedBy: taskCompletions[0]?.userName || null,
       completionId: completion?.id || null,
       completedAt: completion?.completedAt || null,
-      canUndo: completion ? await Completion.canUndo(completion.id) : false
+      canUndo: completion ? Completion.canUndo(completion.id) : false
     });
   }
 

@@ -3,7 +3,8 @@
  * Manages in-app notifications for users
  */
 
-const { query } = require('../db/pool');
+const crypto = require('crypto');
+const { getDb } = require('../db/pool');
 
 class Notification {
   /**
@@ -11,60 +12,56 @@ class Notification {
    * @param {string} userId - The user UUID
    * @param {string} type - Notification type (task_complete, streak_milestone, streak_broken, balance_update, system)
    * @param {string} message - The notification message
-   * @returns {Promise<Object>} The created notification
+   * @returns {Object} The created notification
    */
-  static async create(userId, type, message) {
-    const result = await query(
-      `INSERT INTO notifications (user_id, type, message)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [userId, type, message]
-    );
+  static create(userId, type, message) {
+    const db = getDb();
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
 
-    return Notification.formatNotification(result.rows[0]);
+    db.prepare(
+      'INSERT INTO notifications (id, user_id, type, message, created_at) VALUES (?, ?, ?, ?, ?)'
+    ).run(id, userId, type, message, now);
+
+    const row = db.prepare('SELECT * FROM notifications WHERE id = ?').get(id);
+    return Notification.formatNotification(row);
   }
 
   /**
    * Find notifications by user with pagination
    * @param {string} userId - The user UUID
    * @param {Object} options - Pagination options { limit, offset, unreadOnly }
-   * @returns {Promise<Object>} Notifications and pagination info
+   * @returns {Object} Notifications and pagination info
    */
-  static async findByUser(userId, options = {}) {
+  static findByUser(userId, options = {}) {
+    const db = getDb();
     const { limit = 20, offset = 0, unreadOnly = false } = options;
 
-    let sql = `
-      SELECT *
-      FROM notifications
-      WHERE user_id = $1
-    `;
+    let sql = 'SELECT * FROM notifications WHERE user_id = ?';
     const params = [userId];
-    let paramIndex = 2;
 
     if (unreadOnly) {
-      sql += ` AND read = FALSE`;
+      sql += ' AND read = 0';
     }
 
-    sql += ` ORDER BY created_at DESC`;
-
     // Get total count for pagination
-    const countSql = sql.replace('SELECT *', 'SELECT COUNT(*)');
-    const countResult = await query(countSql, params);
-    const total = parseInt(countResult.rows[0].count) || 0;
+    const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as count');
+    const countRow = db.prepare(countSql).get(...params);
+    const total = parseInt(countRow.count) || 0;
 
-    // Add pagination
-    sql += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    // Add ordering and pagination
+    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    const result = await query(sql, params);
+    const rows = db.prepare(sql).all(...params);
 
     return {
-      notifications: result.rows.map(row => Notification.formatNotification(row)),
+      notifications: rows.map(row => Notification.formatNotification(row)),
       pagination: {
         total,
         limit,
         offset,
-        hasMore: offset + result.rows.length < total
+        hasMore: offset + rows.length < total
       }
     };
   }
@@ -72,87 +69,73 @@ class Notification {
   /**
    * Mark a notification as read
    * @param {string} id - The notification UUID
-   * @returns {Promise<Object|null>} The updated notification or null
+   * @returns {Object|null} The updated notification or null
    */
-  static async markAsRead(id) {
-    const result = await query(
-      `UPDATE notifications
-       SET read = TRUE
-       WHERE id = $1
-       RETURNING *`,
-      [id]
-    );
+  static markAsRead(id) {
+    const db = getDb();
+    const info = db.prepare('UPDATE notifications SET read = 1 WHERE id = ?').run(id);
 
-    if (result.rows.length === 0) {
+    if (info.changes === 0) {
       return null;
     }
 
-    return Notification.formatNotification(result.rows[0]);
+    const row = db.prepare('SELECT * FROM notifications WHERE id = ?').get(id);
+    return Notification.formatNotification(row);
   }
 
   /**
    * Mark all notifications as read for a user
    * @param {string} userId - The user UUID
-   * @returns {Promise<number>} Number of notifications marked as read
+   * @returns {number} Number of notifications marked as read
    */
-  static async markAllAsRead(userId) {
-    const result = await query(
-      `UPDATE notifications
-       SET read = TRUE
-       WHERE user_id = $1 AND read = FALSE`,
-      [userId]
-    );
-
-    return result.rowCount;
+  static markAllAsRead(userId) {
+    const db = getDb();
+    const info = db.prepare('UPDATE notifications SET read = 1 WHERE user_id = ? AND read = 0').run(userId);
+    return info.changes;
   }
 
   /**
    * Get unread notification count for a user
    * @param {string} userId - The user UUID
-   * @returns {Promise<number>} Unread count
+   * @returns {number} Unread count
    */
-  static async getUnreadCount(userId) {
-    const result = await query(
-      `SELECT COUNT(*) as count
-       FROM notifications
-       WHERE user_id = $1 AND read = FALSE`,
-      [userId]
-    );
-
-    return parseInt(result.rows[0].count) || 0;
+  static getUnreadCount(userId) {
+    const db = getDb();
+    const row = db.prepare(
+      'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND read = 0'
+    ).get(userId);
+    return parseInt(row.count) || 0;
   }
 
   /**
    * Find a notification by ID
    * @param {string} id - The notification UUID
-   * @returns {Promise<Object|null>} The notification or null
+   * @returns {Object|null} The notification or null
    */
-  static async findById(id) {
-    const result = await query(
-      'SELECT * FROM notifications WHERE id = $1',
-      [id]
-    );
+  static findById(id) {
+    const db = getDb();
+    const row = db.prepare('SELECT * FROM notifications WHERE id = ?').get(id);
 
-    if (result.rows.length === 0) {
+    if (!row) {
       return null;
     }
 
-    return Notification.formatNotification(result.rows[0]);
+    return Notification.formatNotification(row);
   }
 
   /**
    * Delete old notifications (cleanup job)
    * @param {number} daysOld - Delete notifications older than this many days
-   * @returns {Promise<number>} Number of deleted notifications
+   * @returns {number} Number of deleted notifications
    */
-  static async deleteOld(daysOld = 30) {
-    const result = await query(
-      `DELETE FROM notifications
-       WHERE created_at < NOW() - INTERVAL '1 day' * $1`,
-      [daysOld]
-    );
+  static deleteOld(daysOld = 30) {
+    const db = getDb();
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    const cutoffStr = cutoffDate.toISOString();
 
-    return result.rowCount;
+    const info = db.prepare('DELETE FROM notifications WHERE created_at < ?').run(cutoffStr);
+    return info.changes;
   }
 
   /**
@@ -166,7 +149,7 @@ class Notification {
       userId: row.user_id,
       type: row.type,
       message: row.message,
-      read: row.read,
+      read: row.read === 1,
       createdAt: row.created_at
     };
   }

@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added build.yaml for Home Assistant local add-on builds
+- Added icon.svg, icon.png, and logo.png for add-on branding
 - Performance optimizations for improved response times and reduced database load
   - In-memory cache middleware (`src/middleware/cache.js`)
     - Simple TTL-based cache with automatic expiration
@@ -95,6 +97,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `node-cron` dependency for scheduled jobs
 
 ### Changed
+- Migrated database from PostgreSQL to SQLite for self-contained operation
+  - Replaced `pg` library with `better-sqlite3` for synchronous, embedded database
+  - Database stored at `/data/family-chores.db` in Home Assistant, with fallback to `./data/` for development
+  - Enabled WAL mode for better concurrency
+  - All models updated to use SQLite syntax (? placeholders instead of $1, $2, etc.)
+  - UUID generation using `crypto.randomUUID()` instead of PostgreSQL's gen_random_uuid()
+- Updated Dockerfile to build better-sqlite3 from source (added python3, make, g++, sqlite)
+- Updated config.yaml to remove PostgreSQL configuration options
+- Updated run.sh to remove PostgreSQL environment variables
 - Updated API routes to use caching middleware
   - `GET /api/dashboard` - cached per user for 30 seconds
   - `GET /api/family/dashboard` - cached per household for 30 seconds
@@ -111,3 +122,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `getBalance()` now delegates to `Balance.get()`
   - `awardMilestoneBonus()` now uses `Balance.add()` with 'bonus' type
 - Updated database schema to include 'bonus' as valid transaction type
+
+### Removed
+- PostgreSQL database dependency and configuration
+  - Removed postgres_host, postgres_port, postgres_db, postgres_user, postgres_password config options
+  - Removed pg library from package.json

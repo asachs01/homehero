@@ -2,7 +2,8 @@
  * User model for database operations
  */
 
-const { query } = require('../db/pool');
+const crypto = require('crypto');
+const { getDb } = require('../db/pool');
 const { hashPin } = require('../utils/pin');
 
 class User {
@@ -18,46 +19,51 @@ class User {
     // Hash PIN if provided
     const pinHash = pin ? await hashPin(pin) : null;
 
-    const result = await query(
-      `INSERT INTO users (household_id, name, role, pin_hash, avatar)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, household_id, name, role, avatar, created_at`,
-      [householdId, name, role, pinHash, avatar]
-    );
+    const db = getDb();
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
 
-    return User.formatUser(result.rows[0]);
+    db.prepare(
+      'INSERT INTO users (id, household_id, name, role, pin_hash, avatar, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, householdId, name, role, pinHash, avatar, now);
+
+    const row = db.prepare(
+      'SELECT id, household_id, name, role, avatar, created_at FROM users WHERE id = ?'
+    ).get(id);
+
+    return User.formatUser(row);
   }
 
   /**
    * Find a user by ID
    * @param {string} id - The user UUID
-   * @returns {Promise<Object|null>} The user or null if not found
+   * @returns {Object|null} The user or null if not found
    */
-  static async findById(id) {
-    const result = await query(
-      'SELECT id, household_id, name, role, avatar, created_at FROM users WHERE id = $1',
-      [id]
-    );
+  static findById(id) {
+    const db = getDb();
+    const row = db.prepare(
+      'SELECT id, household_id, name, role, avatar, created_at FROM users WHERE id = ?'
+    ).get(id);
 
-    if (result.rows.length === 0) {
+    if (!row) {
       return null;
     }
 
-    return User.formatUser(result.rows[0]);
+    return User.formatUser(row);
   }
 
   /**
    * Find all users in a household
    * @param {string} householdId - The household UUID
-   * @returns {Promise<Object[]>} Array of users
+   * @returns {Object[]} Array of users
    */
-  static async findByHousehold(householdId) {
-    const result = await query(
-      'SELECT id, household_id, name, role, avatar, created_at FROM users WHERE household_id = $1 ORDER BY created_at ASC',
-      [householdId]
-    );
+  static findByHousehold(householdId) {
+    const db = getDb();
+    const rows = db.prepare(
+      'SELECT id, household_id, name, role, avatar, created_at FROM users WHERE household_id = ? ORDER BY created_at ASC'
+    ).all(householdId);
 
-    return result.rows.map(row => User.formatUser(row));
+    return rows.map(row => User.formatUser(row));
   }
 
   /**
@@ -67,33 +73,29 @@ class User {
    * @returns {Promise<Object|null>} The updated user or null if not found
    */
   static async update(id, data) {
+    const db = getDb();
     const updates = [];
     const params = [];
-    let paramIndex = 1;
 
     if (data.name !== undefined) {
-      updates.push(`name = $${paramIndex}`);
+      updates.push('name = ?');
       params.push(data.name);
-      paramIndex++;
     }
 
     if (data.role !== undefined) {
-      updates.push(`role = $${paramIndex}`);
+      updates.push('role = ?');
       params.push(data.role);
-      paramIndex++;
     }
 
     if (data.avatar !== undefined) {
-      updates.push(`avatar = $${paramIndex}`);
+      updates.push('avatar = ?');
       params.push(data.avatar);
-      paramIndex++;
     }
 
     if (data.pin !== undefined) {
       const pinHash = data.pin ? await hashPin(data.pin) : null;
-      updates.push(`pin_hash = $${paramIndex}`);
+      updates.push('pin_hash = ?');
       params.push(pinHash);
-      paramIndex++;
     }
 
     if (updates.length === 0) {
@@ -101,31 +103,26 @@ class User {
     }
 
     params.push(id);
-    const result = await query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex}
-       RETURNING id, household_id, name, role, avatar, created_at`,
-      params
-    );
+    const info = db.prepare(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`
+    ).run(...params);
 
-    if (result.rows.length === 0) {
+    if (info.changes === 0) {
       return null;
     }
 
-    return User.formatUser(result.rows[0]);
+    return User.findById(id);
   }
 
   /**
    * Delete a user
    * @param {string} id - The user UUID
-   * @returns {Promise<boolean>} True if deleted, false if not found
+   * @returns {boolean} True if deleted, false if not found
    */
-  static async delete(id) {
-    const result = await query(
-      'DELETE FROM users WHERE id = $1 RETURNING id',
-      [id]
-    );
-
-    return result.rows.length > 0;
+  static delete(id) {
+    const db = getDb();
+    const info = db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    return info.changes > 0;
   }
 
   /**

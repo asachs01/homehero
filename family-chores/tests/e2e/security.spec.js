@@ -143,9 +143,12 @@ test.describe('Authentication Security', () => {
 
   test('should not expose internal error details in production mode', async () => {
     // Request a non-existent resource to trigger an error
+    // Without auth, this returns 401 (security best practice to not reveal route existence)
+    // With auth but non-existent route, it would return 404
     const response = await api.get('/api/nonexistent');
 
-    expect(response.status()).toBe(404);
+    // Either 401 (unauthenticated) or 404 (not found) is acceptable
+    expect([401, 404]).toContain(response.status());
 
     const error = await response.json();
 
@@ -180,7 +183,7 @@ test.describe('Input Validation Security', () => {
   test('should reject SQL injection attempts in task name', async () => {
     const response = await api.post('/api/tasks', {
       name: "'; DROP TABLE tasks; --",
-      type: 'recurring'
+      type: 'daily'
     });
 
     // Should either reject or sanitize - not execute SQL
@@ -194,7 +197,7 @@ test.describe('Input Validation Security', () => {
   test('should reject XSS attempts in task description', async () => {
     const response = await api.post('/api/tasks', {
       name: 'Test Task',
-      type: 'recurring',
+      type: 'daily',
       description: '<script>alert("xss")</script>'
     });
 
@@ -209,7 +212,7 @@ test.describe('Input Validation Security', () => {
   test('should validate numeric fields', async () => {
     const response = await api.post('/api/tasks', {
       name: 'Test Task',
-      type: 'recurring',
+      type: 'daily',
       dollarValue: 'not-a-number'
     });
 
@@ -277,7 +280,7 @@ test.describe('Authorization Security', () => {
 
     const task = await api.createTask({
       name: 'Household 1 Task',
-      type: 'recurring'
+      type: 'daily'
     });
 
     // Login as user2 and try to access user1's task
@@ -295,7 +298,7 @@ test.describe('Authorization Security', () => {
 
     const task = await api.createTask({
       name: 'Protected Task',
-      type: 'recurring'
+      type: 'daily'
     });
 
     // Login as user2 and try to modify
@@ -327,7 +330,7 @@ test.describe('Authorization Security', () => {
     // Child should not be able to create tasks
     const createResponse = await api.post('/api/tasks', {
       name: 'Child Task',
-      type: 'recurring'
+      type: 'daily'
     });
     expect(createResponse.status()).toBe(403);
 

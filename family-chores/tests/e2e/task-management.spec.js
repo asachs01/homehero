@@ -44,14 +44,14 @@ test.describe('Task Management API', () => {
     await api.dispose();
   });
 
-  test('should create a recurring task', async () => {
-    const taskData = generateTask('Recurring');
+  test('should create a daily task', async () => {
+    const taskData = generateTask('Daily');
 
     const task = await api.createTask(taskData);
 
     expect(task).toHaveProperty('id');
     expect(task.name).toBe(taskData.name);
-    expect(task.type).toBe('recurring');
+    expect(task.type).toBe('daily');
     expect(task.dollarValue).toBe(taskData.dollarValue);
   });
 
@@ -137,7 +137,7 @@ test.describe('Task Management API', () => {
   test('should validate task data', async () => {
     // Missing name
     const response1 = await api.post('/api/tasks', {
-      type: 'recurring'
+      type: 'daily'
     });
     expect(response1.status()).toBe(400);
 

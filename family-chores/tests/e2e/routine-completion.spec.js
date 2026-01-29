@@ -45,16 +45,16 @@ test.describe('Routine Completion Flow', () => {
     // Create tasks
     task1 = await api.createTask({
       name: 'Brush Teeth',
-      type: 'recurring',
+      type: 'daily',
       dollarValue: 0.50,
-      schedule: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+      schedule: [0, 1, 2, 3, 4, 5, 6]  // Every day (0=Sunday, 6=Saturday)
     });
 
     task2 = await api.createTask({
       name: 'Make Bed',
-      type: 'recurring',
+      type: 'daily',
       dollarValue: 0.25,
-      schedule: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+      schedule: [0, 1, 2, 3, 4, 5, 6]  // Every day
     });
 
     // Create routine and add tasks
@@ -281,7 +281,7 @@ test.describe('Full User Flow E2E', () => {
       name: 'Test Parent',
       role: 'parent',
       pin: '1234',
-      avatar: 'robot'
+      avatar: 'lion'
     });
     expect(parent.role).toBe('parent');
 
@@ -300,9 +300,9 @@ test.describe('Full User Flow E2E', () => {
 
     const morningTask = await api.createTask({
       name: 'Morning Task',
-      type: 'recurring',
+      type: 'daily',
       dollarValue: 1.00,
-      schedule: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+      schedule: [0, 1, 2, 3, 4, 5, 6]  // Every day
     });
 
     // Step 5: Parent creates routine and assigns to child

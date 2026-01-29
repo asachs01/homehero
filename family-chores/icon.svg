@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a8e6cf"/>
+      <stop offset="100%" style="stop-color:#88d8b0"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="40" fill="url(#bg)"/>
+  <g fill="#2d5a45">
+    <!-- House -->
+    <path d="M128 45 L55 105 L55 195 L201 195 L201 105 Z" fill="none" stroke="#2d5a45" stroke-width="8"/>
+    <rect x="75" y="120" width="106" height="75" fill="#fff" opacity="0.3"/>
+    <!-- Checkmark -->
+    <path d="M95 155 L115 175 L165 115" fill="none" stroke="#2d5a45" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Family icons -->
+    <circle cx="100" cy="220" r="12"/>
+    <circle cx="128" cy="220" r="12"/>
+    <circle cx="156" cy="220" r="12"/>
+  </g>
+</svg>

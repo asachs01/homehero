@@ -2,78 +2,78 @@
  * Household model for database operations
  */
 
-const { query } = require('../db/pool');
+const crypto = require('crypto');
+const { getDb } = require('../db/pool');
 
 class Household {
   /**
    * Create a new household
    * @param {string} name - The household name
-   * @returns {Promise<Object>} The created household
+   * @returns {Object} The created household
    */
-  static async create(name) {
-    const result = await query(
-      'INSERT INTO households (name) VALUES ($1) RETURNING *',
-      [name]
-    );
+  static create(name) {
+    const db = getDb();
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
 
-    return Household.formatHousehold(result.rows[0]);
+    db.prepare(
+      'INSERT INTO households (id, name, created_at) VALUES (?, ?, ?)'
+    ).run(id, name, now);
+
+    const row = db.prepare('SELECT * FROM households WHERE id = ?').get(id);
+    return Household.formatHousehold(row);
   }
 
   /**
    * Find a household by ID
    * @param {string} id - The household UUID
-   * @returns {Promise<Object|null>} The household or null if not found
+   * @returns {Object|null} The household or null if not found
    */
-  static async findById(id) {
-    const result = await query(
-      'SELECT * FROM households WHERE id = $1',
-      [id]
-    );
+  static findById(id) {
+    const db = getDb();
+    const row = db.prepare('SELECT * FROM households WHERE id = ?').get(id);
 
-    if (result.rows.length === 0) {
+    if (!row) {
       return null;
     }
 
-    return Household.formatHousehold(result.rows[0]);
+    return Household.formatHousehold(row);
   }
 
   /**
    * Find the first household (for single-household setups)
-   * @returns {Promise<Object|null>} The household or null if none exist
+   * @returns {Object|null} The household or null if none exist
    */
-  static async findFirst() {
-    const result = await query(
-      'SELECT * FROM households ORDER BY created_at ASC LIMIT 1'
-    );
+  static findFirst() {
+    const db = getDb();
+    const row = db.prepare('SELECT * FROM households ORDER BY created_at ASC LIMIT 1').get();
 
-    if (result.rows.length === 0) {
+    if (!row) {
       return null;
     }
 
-    return Household.formatHousehold(result.rows[0]);
+    return Household.formatHousehold(row);
   }
 
   /**
    * Update a household
    * @param {string} id - The household UUID
    * @param {Object} data - Fields to update { name, vacationMode }
-   * @returns {Promise<Object|null>} The updated household or null if not found
+   * @returns {Object|null} The updated household or null if not found
    */
-  static async update(id, data) {
+  static update(id, data) {
+    const db = getDb();
     const updates = [];
     const params = [];
-    let paramIndex = 1;
 
     if (data.name !== undefined) {
-      updates.push(`name = $${paramIndex}`);
+      updates.push('name = ?');
       params.push(data.name);
-      paramIndex++;
     }
 
     if (data.vacationMode !== undefined) {
-      updates.push(`vacation_mode = $${paramIndex}`);
-      params.push(data.vacationMode);
-      paramIndex++;
+      updates.push('vacation_mode = ?');
+      params.push(data.vacationMode ? 1 : 0);
     }
 
     if (updates.length === 0) {
@@ -81,41 +81,36 @@ class Household {
     }
 
     params.push(id);
-    const result = await query(
-      `UPDATE households SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-      params
-    );
+    db.prepare(
+      `UPDATE households SET ${updates.join(', ')} WHERE id = ?`
+    ).run(...params);
 
-    if (result.rows.length === 0) {
-      return null;
-    }
-
-    return Household.formatHousehold(result.rows[0]);
+    return Household.findById(id);
   }
 
   /**
    * Check if onboarding is complete for a household
    * Requires at least one admin (parent) and at least one user total
    * @param {string} id - The household UUID
-   * @returns {Promise<Object>} { complete: boolean, hasAdmin: boolean, userCount: number }
+   * @returns {Object} { complete: boolean, hasAdmin: boolean, userCount: number }
    */
-  static async isOnboardingComplete(id) {
+  static isOnboardingComplete(id) {
     // Check if household exists
-    const household = await Household.findById(id);
+    const household = Household.findById(id);
     if (!household) {
       return { complete: false, hasAdmin: false, userCount: 0, error: 'Household not found' };
     }
 
+    const db = getDb();
     // Count users by role
-    const result = await query(
-      `SELECT role, COUNT(*) as count FROM users WHERE household_id = $1 GROUP BY role`,
-      [id]
-    );
+    const rows = db.prepare(
+      'SELECT role, COUNT(*) as count FROM users WHERE household_id = ? GROUP BY role'
+    ).all(id);
 
     let parentCount = 0;
     let childCount = 0;
 
-    for (const row of result.rows) {
+    for (const row of rows) {
       if (row.role === 'parent') {
         parentCount = parseInt(row.count, 10);
       } else if (row.role === 'child') {
@@ -146,7 +141,7 @@ class Household {
     return {
       id: row.id,
       name: row.name,
-      vacationMode: row.vacation_mode,
+      vacationMode: row.vacation_mode === 1,
       createdAt: row.created_at
     };
   }

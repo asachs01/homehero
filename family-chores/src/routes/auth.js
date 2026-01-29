@@ -4,7 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { query } = require('../db/pool');
+const { getDb } = require('../db/pool');
 const { verifyPin } = require('../utils/pin');
 const { generateToken } = require('../auth/jwt');
 const { requireAuth } = require('../middleware/auth');
@@ -18,12 +18,11 @@ const avatars = require('../data/avatars.json');
  */
 router.get('/api/users', cacheUserList, async (req, res) => {
   try {
-    const result = await query(
-      'SELECT id, name, avatar FROM users ORDER BY name'
-    );
+    const db = getDb();
+    const rows = db.prepare('SELECT id, name, avatar FROM users ORDER BY name').all();
 
     // Enrich with avatar data
-    const users = result.rows.map(user => {
+    const users = rows.map(user => {
       const avatarData = avatars.find(a => a.id === user.avatar) || null;
       return {
         id: user.id,
@@ -63,17 +62,15 @@ router.post('/api/auth/login', async (req, res) => {
   }
 
   try {
+    const db = getDb();
     // Fetch user with PIN hash
-    const result = await query(
-      'SELECT id, household_id, name, role, pin_hash, avatar FROM users WHERE id = $1',
-      [userId]
-    );
+    const user = db.prepare(
+      'SELECT id, household_id, name, role, pin_hash, avatar FROM users WHERE id = ?'
+    ).get(userId);
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
-    const user = result.rows[0];
 
     // If user has no PIN set, deny login
     if (!user.pin_hash) {
@@ -118,16 +115,15 @@ router.post('/api/auth/login', async (req, res) => {
  */
 router.get('/api/auth/me', requireAuth, async (req, res) => {
   try {
-    const result = await query(
-      'SELECT id, household_id, name, role, avatar FROM users WHERE id = $1',
-      [req.user.userId]
-    );
+    const db = getDb();
+    const user = db.prepare(
+      'SELECT id, household_id, name, role, avatar FROM users WHERE id = ?'
+    ).get(req.user.userId);
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = result.rows[0];
     const avatarData = avatars.find(a => a.id === user.avatar) || null;
 
     res.json({

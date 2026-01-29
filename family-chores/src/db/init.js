@@ -5,22 +5,21 @@
 
 const fs = require('fs');
 const path = require('path');
-const { pool, query, testConnection } = require('./pool');
+const crypto = require('crypto');
+const { getDb, testConnection } = require('./pool');
 
 /**
  * Check if database tables exist
- * @returns {Promise<boolean>}
+ * @returns {boolean}
  */
-async function tablesExist() {
+function tablesExist() {
   try {
-    const result = await query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables
-        WHERE table_schema = 'public'
-        AND table_name = 'households'
-      )
-    `);
-    return result.rows[0].exists;
+    const db = getDb();
+    const result = db.prepare(`
+      SELECT name FROM sqlite_master
+      WHERE type='table' AND name='households'
+    `).get();
+    return !!result;
   } catch (err) {
     console.error('Database: Error checking tables', err.message);
     return false;
@@ -29,14 +28,20 @@ async function tablesExist() {
 
 /**
  * Run schema SQL file
- * @returns {Promise<void>}
+ * Uses exec() to run the entire schema file at once
+ * This properly handles multiple statements and comments
  */
-async function runSchema() {
+function runSchema() {
   const schemaPath = path.join(__dirname, 'schema.sql');
   const schema = fs.readFileSync(schemaPath, 'utf8');
 
   try {
-    await query(schema);
+    const db = getDb();
+
+    // Use exec to run the entire schema
+    // This handles multiple statements and comments properly
+    db.exec(schema);
+
     console.log('Database: Schema applied successfully');
   } catch (err) {
     console.error('Database: Error applying schema', err.message);
@@ -46,24 +51,30 @@ async function runSchema() {
 
 /**
  * Create default household if none exists
- * @returns {Promise<Object|null>} The created household or null
+ * @returns {Object|null} The created household or null
  */
-async function createDefaultHousehold() {
+function createDefaultHousehold() {
   try {
-    const existing = await query('SELECT id FROM households LIMIT 1');
+    const db = getDb();
 
-    if (existing.rows.length > 0) {
+    const existing = db.prepare('SELECT id FROM households LIMIT 1').get();
+
+    if (existing) {
       console.log('Database: Household already exists');
       return null;
     }
 
-    const result = await query(
-      'INSERT INTO households (name) VALUES ($1) RETURNING *',
-      ['My Household']
-    );
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    db.prepare(
+      'INSERT INTO households (id, name, created_at) VALUES (?, ?, ?)'
+    ).run(id, 'My Household', now);
+
+    const household = db.prepare('SELECT * FROM households WHERE id = ?').get(id);
 
     console.log('Database: Default household created');
-    return result.rows[0];
+    return household;
   } catch (err) {
     console.error('Database: Error creating default household', err.message);
     throw err;
@@ -81,17 +92,17 @@ async function initialize() {
   // Test connection
   const connected = await testConnection();
   if (!connected) {
-    console.error('Database: Cannot connect to PostgreSQL');
+    console.error('Database: Cannot connect to SQLite');
     return false;
   }
 
   // Check if tables exist
-  const exists = await tablesExist();
+  const exists = tablesExist();
 
   if (!exists) {
     console.log('Database: Tables not found, running schema...');
-    await runSchema();
-    await createDefaultHousehold();
+    runSchema();
+    createDefaultHousehold();
   } else {
     console.log('Database: Tables already exist');
   }

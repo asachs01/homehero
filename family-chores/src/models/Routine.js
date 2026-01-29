@@ -2,33 +2,36 @@
  * Routine model for database operations
  */
 
-const { query } = require('../db/pool');
+const crypto = require('crypto');
+const { getDb } = require('../db/pool');
 
 class Routine {
   /**
    * Create a new routine
    * @param {string} householdId - The household UUID
    * @param {Object} data - Routine data
-   * @returns {Promise<Object>} The created routine
+   * @returns {Object} The created routine
    */
-  static async create(householdId, data) {
+  static create(householdId, data) {
     const { name, assignedUserId, tasks = [] } = data;
 
-    const result = await query(
-      `INSERT INTO routines (household_id, name, assigned_user_id)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [householdId, name, assignedUserId]
-    );
+    const db = getDb();
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
 
-    const routine = Routine.formatRoutine(result.rows[0]);
+    db.prepare(
+      'INSERT INTO routines (id, household_id, name, assigned_user_id, created_at) VALUES (?, ?, ?, ?, ?)'
+    ).run(id, householdId, name, assignedUserId, now);
+
+    const row = db.prepare('SELECT * FROM routines WHERE id = ?').get(id);
+    const routine = Routine.formatRoutine(row);
 
     // Add tasks if provided
     if (tasks.length > 0) {
       for (const task of tasks) {
-        await Routine.addTask(routine.id, task.taskId, task.position);
+        Routine.addTask(routine.id, task.taskId, task.position);
       }
-      routine.tasks = await Routine.getRoutineTasks(routine.id);
+      routine.tasks = Routine.getRoutineTasks(routine.id);
     } else {
       routine.tasks = [];
     }
@@ -40,33 +43,32 @@ class Routine {
    * Find all routines for a household with optional user filter
    * @param {string} householdId - The household UUID
    * @param {string} userId - Optional user UUID filter
-   * @returns {Promise<Object[]>} Array of routines
+   * @returns {Object[]} Array of routines
    */
-  static async findAll(householdId, userId = null) {
+  static findAll(householdId, userId = null) {
+    const db = getDb();
     let sql = `
       SELECT r.*
       FROM routines r
-      WHERE r.household_id = $1
+      WHERE r.household_id = ?
     `;
     const params = [householdId];
 
     if (userId) {
-      sql += ' AND r.assigned_user_id = $2';
+      sql += ' AND r.assigned_user_id = ?';
       params.push(userId);
     }
 
     sql += ' ORDER BY r.created_at DESC';
 
-    const result = await query(sql, params);
+    const rows = db.prepare(sql).all(...params);
 
     // Fetch tasks for each routine
-    const routines = await Promise.all(
-      result.rows.map(async (row) => {
-        const routine = Routine.formatRoutine(row);
-        routine.tasks = await Routine.getRoutineTasks(routine.id);
-        return routine;
-      })
-    );
+    const routines = rows.map(row => {
+      const routine = Routine.formatRoutine(row);
+      routine.tasks = Routine.getRoutineTasks(routine.id);
+      return routine;
+    });
 
     return routines;
   }
@@ -74,20 +76,18 @@ class Routine {
   /**
    * Find a routine by ID
    * @param {string} id - The routine UUID
-   * @returns {Promise<Object|null>} The routine or null if not found
+   * @returns {Object|null} The routine or null if not found
    */
-  static async findById(id) {
-    const result = await query(
-      'SELECT * FROM routines WHERE id = $1',
-      [id]
-    );
+  static findById(id) {
+    const db = getDb();
+    const row = db.prepare('SELECT * FROM routines WHERE id = ?').get(id);
 
-    if (result.rows.length === 0) {
+    if (!row) {
       return null;
     }
 
-    const routine = Routine.formatRoutine(result.rows[0]);
-    routine.tasks = await Routine.getRoutineTasks(routine.id);
+    const routine = Routine.formatRoutine(row);
+    routine.tasks = Routine.getRoutineTasks(routine.id);
     return routine;
   }
 
@@ -95,12 +95,12 @@ class Routine {
    * Update a routine
    * @param {string} id - The routine UUID
    * @param {Object} data - Fields to update
-   * @returns {Promise<Object|null>} The updated routine or null if not found
+   * @returns {Object|null} The updated routine or null if not found
    */
-  static async update(id, data) {
+  static update(id, data) {
+    const db = getDb();
     const updates = [];
     const params = [];
-    let paramIndex = 1;
 
     const fieldMap = {
       name: 'name',
@@ -109,9 +109,8 @@ class Routine {
 
     for (const [key, column] of Object.entries(fieldMap)) {
       if (data[key] !== undefined) {
-        updates.push(`${column} = $${paramIndex}`);
+        updates.push(`${column} = ?`);
         params.push(data[key]);
-        paramIndex++;
       }
     }
 
@@ -120,32 +119,26 @@ class Routine {
     }
 
     params.push(id);
-    const result = await query(
-      `UPDATE routines SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
-      params
-    );
+    const info = db.prepare(
+      `UPDATE routines SET ${updates.join(', ')} WHERE id = ?`
+    ).run(...params);
 
-    if (result.rows.length === 0) {
+    if (info.changes === 0) {
       return null;
     }
 
-    const routine = Routine.formatRoutine(result.rows[0]);
-    routine.tasks = await Routine.getRoutineTasks(routine.id);
-    return routine;
+    return Routine.findById(id);
   }
 
   /**
    * Delete a routine
    * @param {string} id - The routine UUID
-   * @returns {Promise<boolean>} True if deleted, false if not found
+   * @returns {boolean} True if deleted, false if not found
    */
-  static async delete(id) {
-    const result = await query(
-      'DELETE FROM routines WHERE id = $1 RETURNING id',
-      [id]
-    );
-
-    return result.rows.length > 0;
+  static delete(id) {
+    const db = getDb();
+    const info = db.prepare('DELETE FROM routines WHERE id = ?').run(id);
+    return info.changes > 0;
   }
 
   /**
@@ -153,114 +146,128 @@ class Routine {
    * @param {string} routineId - The routine UUID
    * @param {string} taskId - The task UUID
    * @param {number} position - The position in the routine
-   * @returns {Promise<void>}
    */
-  static async addTask(routineId, taskId, position) {
+  static addTask(routineId, taskId, position) {
+    const db = getDb();
+
     // If position not provided, add at the end
     if (position === undefined || position === null) {
-      const result = await query(
-        'SELECT COALESCE(MAX(position), 0) + 1 as next_position FROM routine_tasks WHERE routine_id = $1',
-        [routineId]
-      );
-      position = result.rows[0].next_position;
+      const row = db.prepare(
+        'SELECT COALESCE(MAX(position), 0) + 1 as next_position FROM routine_tasks WHERE routine_id = ?'
+      ).get(routineId);
+      position = row.next_position;
     }
 
-    await query(
-      `INSERT INTO routine_tasks (routine_id, task_id, position)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (routine_id, task_id) DO UPDATE SET position = $3`,
-      [routineId, taskId, position]
-    );
+    // SQLite doesn't have ON CONFLICT DO UPDATE with same syntax, use INSERT OR REPLACE
+    db.prepare(
+      'INSERT OR REPLACE INTO routine_tasks (routine_id, task_id, position) VALUES (?, ?, ?)'
+    ).run(routineId, taskId, position);
   }
 
   /**
    * Remove a task from a routine
    * @param {string} routineId - The routine UUID
    * @param {string} taskId - The task UUID
-   * @returns {Promise<boolean>} True if removed, false if not found
+   * @returns {boolean} True if removed, false if not found
    */
-  static async removeTask(routineId, taskId) {
-    const result = await query(
-      'DELETE FROM routine_tasks WHERE routine_id = $1 AND task_id = $2 RETURNING task_id',
-      [routineId, taskId]
-    );
-
-    return result.rows.length > 0;
+  static removeTask(routineId, taskId) {
+    const db = getDb();
+    const info = db.prepare(
+      'DELETE FROM routine_tasks WHERE routine_id = ? AND task_id = ?'
+    ).run(routineId, taskId);
+    return info.changes > 0;
   }
 
   /**
    * Reorder tasks in a routine
    * @param {string} routineId - The routine UUID
    * @param {string[]} taskOrder - Array of task UUIDs in desired order
-   * @returns {Promise<void>}
    */
-  static async reorderTasks(routineId, taskOrder) {
-    // Update positions based on array order
+  static reorderTasks(routineId, taskOrder) {
+    const db = getDb();
+    const updateStmt = db.prepare(
+      'UPDATE routine_tasks SET position = ? WHERE routine_id = ? AND task_id = ?'
+    );
+
     for (let i = 0; i < taskOrder.length; i++) {
-      await query(
-        'UPDATE routine_tasks SET position = $1 WHERE routine_id = $2 AND task_id = $3',
-        [i, routineId, taskOrder[i]]
-      );
+      updateStmt.run(i, routineId, taskOrder[i]);
     }
   }
 
   /**
    * Get all tasks for a routine in order
    * @param {string} routineId - The routine UUID
-   * @returns {Promise<Object[]>} Array of tasks with position
+   * @returns {Object[]} Array of tasks with position
    */
-  static async getRoutineTasks(routineId) {
-    const result = await query(
+  static getRoutineTasks(routineId) {
+    const db = getDb();
+    const rows = db.prepare(
       `SELECT t.*, rt.position
        FROM tasks t
        JOIN routine_tasks rt ON t.id = rt.task_id
-       WHERE rt.routine_id = $1
-       ORDER BY rt.position ASC`,
-      [routineId]
-    );
+       WHERE rt.routine_id = ?
+       ORDER BY rt.position ASC`
+    ).all(routineId);
 
-    return result.rows.map(row => ({
-      id: row.id,
-      householdId: row.household_id,
-      name: row.name,
-      description: row.description,
-      icon: row.icon,
-      type: row.type,
-      dollarValue: parseFloat(row.dollar_value) || 0,
-      schedule: row.schedule || [],
-      timeWindow: row.time_window,
-      position: row.position,
-      createdAt: row.created_at
-    }));
+    return rows.map(row => {
+      let schedule = row.schedule;
+      let timeWindow = row.time_window;
+
+      // Parse JSON if stored as string
+      if (typeof schedule === 'string') {
+        try {
+          schedule = JSON.parse(schedule);
+        } catch (e) {
+          schedule = [];
+        }
+      }
+      if (typeof timeWindow === 'string') {
+        try {
+          timeWindow = JSON.parse(timeWindow);
+        } catch (e) {
+          timeWindow = null;
+        }
+      }
+
+      return {
+        id: row.id,
+        householdId: row.household_id,
+        name: row.name,
+        description: row.description,
+        icon: row.icon,
+        type: row.type,
+        dollarValue: parseFloat(row.dollar_value) || 0,
+        schedule: schedule || [],
+        timeWindow: timeWindow,
+        position: row.position,
+        createdAt: row.created_at
+      };
+    });
   }
 
   /**
    * Get the household ID for a routine
    * @param {string} routineId - The routine UUID
-   * @returns {Promise<string|null>} The household UUID or null
+   * @returns {string|null} The household UUID or null
    */
-  static async getHouseholdId(routineId) {
-    const result = await query(
-      'SELECT household_id FROM routines WHERE id = $1',
-      [routineId]
-    );
-
-    return result.rows.length > 0 ? result.rows[0].household_id : null;
+  static getHouseholdId(routineId) {
+    const db = getDb();
+    const row = db.prepare('SELECT household_id FROM routines WHERE id = ?').get(routineId);
+    return row ? row.household_id : null;
   }
 
   /**
    * Check if a task exists in a routine
    * @param {string} routineId - The routine UUID
    * @param {string} taskId - The task UUID
-   * @returns {Promise<boolean>} True if task exists in routine
+   * @returns {boolean} True if task exists in routine
    */
-  static async hasTask(routineId, taskId) {
-    const result = await query(
-      'SELECT 1 FROM routine_tasks WHERE routine_id = $1 AND task_id = $2',
-      [routineId, taskId]
-    );
-
-    return result.rows.length > 0;
+  static hasTask(routineId, taskId) {
+    const db = getDb();
+    const row = db.prepare(
+      'SELECT 1 FROM routine_tasks WHERE routine_id = ? AND task_id = ?'
+    ).get(routineId, taskId);
+    return !!row;
   }
 
   /**

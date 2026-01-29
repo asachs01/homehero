@@ -1,11 +1,15 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-# Install Node.js 20 and bash for bashio
+# Install Node.js 20, bash for bashio, and build dependencies for better-sqlite3
 RUN apk add --no-cache \
     nodejs=~20 \
     npm \
-    bash
+    bash \
+    python3 \
+    make \
+    g++ \
+    sqlite
 
 # Set working directory
 WORKDIR /app
@@ -13,7 +17,7 @@ WORKDIR /app
 # Copy package files first for better layer caching
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies (better-sqlite3 requires native compilation)
 RUN npm ci --only=production
 
 # Copy source files

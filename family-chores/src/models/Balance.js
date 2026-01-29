@@ -3,30 +3,28 @@
  * Manages user balances and transaction history
  */
 
-const { query } = require('../db/pool');
+const crypto = require('crypto');
+const { getDb } = require('../db/pool');
 
 class Balance {
   /**
    * Get the current balance for a user
    * Creates a balance record if it doesn't exist
    * @param {string} userId - The user UUID
-   * @returns {Promise<Object>} Balance object { userId, currentBalance }
+   * @returns {Object} Balance object { userId, currentBalance }
    */
-  static async get(userId) {
+  static get(userId) {
+    const db = getDb();
+
     // Ensure balance record exists
-    await query(
-      `INSERT INTO balances (user_id, current_balance)
-       VALUES ($1, 0)
-       ON CONFLICT (user_id) DO NOTHING`,
-      [userId]
-    );
+    const existing = db.prepare('SELECT user_id FROM balances WHERE user_id = ?').get(userId);
+    if (!existing) {
+      const id = crypto.randomUUID();
+      db.prepare('INSERT INTO balances (id, user_id, current_balance) VALUES (?, ?, 0)').run(id, userId);
+    }
 
-    const result = await query(
-      'SELECT user_id, current_balance FROM balances WHERE user_id = $1',
-      [userId]
-    );
+    const row = db.prepare('SELECT user_id, current_balance FROM balances WHERE user_id = ?').get(userId);
 
-    const row = result.rows[0];
     return {
       userId: row.user_id,
       currentBalance: parseFloat(row.current_balance) || 0
@@ -39,9 +37,9 @@ class Balance {
    * @param {number} amount - The amount to add (must be positive)
    * @param {string} type - Transaction type (earned, adjustment, bonus)
    * @param {string} description - Description of the transaction
-   * @returns {Promise<Object>} Transaction record and updated balance
+   * @returns {Object} Transaction record and updated balance
    */
-  static async add(userId, amount, type, description) {
+  static add(userId, amount, type, description) {
     if (amount <= 0) {
       throw new Error('Amount must be positive');
     }
@@ -50,33 +48,32 @@ class Balance {
       throw new Error('Invalid transaction type for add operation');
     }
 
+    const db = getDb();
+
     // Ensure balance record exists
-    await query(
-      `INSERT INTO balances (user_id, current_balance)
-       VALUES ($1, 0)
-       ON CONFLICT (user_id) DO NOTHING`,
-      [userId]
-    );
+    const existing = db.prepare('SELECT user_id FROM balances WHERE user_id = ?').get(userId);
+    if (!existing) {
+      const id = crypto.randomUUID();
+      db.prepare('INSERT INTO balances (id, user_id, current_balance) VALUES (?, ?, 0)').run(id, userId);
+    }
 
     // Update balance
-    await query(
-      `UPDATE balances SET current_balance = current_balance + $1 WHERE user_id = $2`,
-      [amount, userId]
-    );
+    db.prepare('UPDATE balances SET current_balance = current_balance + ? WHERE user_id = ?').run(amount, userId);
 
     // Record transaction
-    const transactionResult = await query(
-      `INSERT INTO balance_transactions (user_id, amount, type, description)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [userId, amount, type, description]
-    );
+    const transactionId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.prepare(
+      'INSERT INTO balance_transactions (id, user_id, amount, type, description, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(transactionId, userId, amount, type, description, now);
+
+    const transactionRow = db.prepare('SELECT * FROM balance_transactions WHERE id = ?').get(transactionId);
 
     // Get updated balance
-    const balance = await Balance.get(userId);
+    const balance = Balance.get(userId);
 
     return {
-      transaction: Balance.formatTransaction(transactionResult.rows[0]),
+      transaction: Balance.formatTransaction(transactionRow),
       balance: balance.currentBalance
     };
   }
@@ -87,9 +84,9 @@ class Balance {
    * @param {number} amount - The amount to deduct (must be positive)
    * @param {string} type - Transaction type (spent, payout, adjustment)
    * @param {string} description - Description of the transaction
-   * @returns {Promise<Object>} Transaction record and updated balance
+   * @returns {Object} Transaction record and updated balance
    */
-  static async deduct(userId, amount, type, description) {
+  static deduct(userId, amount, type, description) {
     if (amount <= 0) {
       throw new Error('Amount must be positive');
     }
@@ -98,31 +95,31 @@ class Balance {
       throw new Error('Invalid transaction type for deduct operation');
     }
 
+    const db = getDb();
+
     // Check current balance
-    const currentBalance = await Balance.get(userId);
+    const currentBalance = Balance.get(userId);
     if (currentBalance.currentBalance < amount) {
       throw new Error('Insufficient balance');
     }
 
     // Update balance
-    await query(
-      `UPDATE balances SET current_balance = current_balance - $1 WHERE user_id = $2`,
-      [amount, userId]
-    );
+    db.prepare('UPDATE balances SET current_balance = current_balance - ? WHERE user_id = ?').run(amount, userId);
 
     // Record transaction with negative amount
-    const transactionResult = await query(
-      `INSERT INTO balance_transactions (user_id, amount, type, description)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [userId, -amount, type, description]
-    );
+    const transactionId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.prepare(
+      'INSERT INTO balance_transactions (id, user_id, amount, type, description, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(transactionId, userId, -amount, type, description, now);
+
+    const transactionRow = db.prepare('SELECT * FROM balance_transactions WHERE id = ?').get(transactionId);
 
     // Get updated balance
-    const balance = await Balance.get(userId);
+    const balance = Balance.get(userId);
 
     return {
-      transaction: Balance.formatTransaction(transactionResult.rows[0]),
+      transaction: Balance.formatTransaction(transactionRow),
       balance: balance.currentBalance
     };
   }
@@ -136,55 +133,48 @@ class Balance {
    * @param {string} options.type - Filter by transaction type
    * @param {Date} options.startDate - Filter by start date
    * @param {Date} options.endDate - Filter by end date
-   * @returns {Promise<Object>} { transactions, total, limit, offset }
+   * @returns {Object} { transactions, total, limit, offset }
    */
-  static async getTransactions(userId, options = {}) {
+  static getTransactions(userId, options = {}) {
+    const db = getDb();
     const limit = Math.min(options.limit || 50, 100);
     const offset = options.offset || 0;
 
     // Build WHERE clause
-    const conditions = ['user_id = $1'];
+    const conditions = ['user_id = ?'];
     const params = [userId];
-    let paramIndex = 2;
 
     if (options.type) {
-      conditions.push(`type = $${paramIndex}`);
+      conditions.push('type = ?');
       params.push(options.type);
-      paramIndex++;
     }
 
     if (options.startDate) {
-      conditions.push(`created_at >= $${paramIndex}`);
-      params.push(options.startDate);
-      paramIndex++;
+      conditions.push('created_at >= ?');
+      params.push(options.startDate instanceof Date ? options.startDate.toISOString() : options.startDate);
     }
 
     if (options.endDate) {
-      conditions.push(`created_at <= $${paramIndex}`);
-      params.push(options.endDate);
-      paramIndex++;
+      conditions.push('created_at <= ?');
+      params.push(options.endDate instanceof Date ? options.endDate.toISOString() : options.endDate);
     }
 
     const whereClause = conditions.join(' AND ');
 
     // Get total count
-    const countResult = await query(
-      `SELECT COUNT(*) FROM balance_transactions WHERE ${whereClause}`,
-      params
-    );
-    const total = parseInt(countResult.rows[0].count);
+    const countRow = db.prepare(`SELECT COUNT(*) as count FROM balance_transactions WHERE ${whereClause}`).get(...params);
+    const total = parseInt(countRow.count);
 
     // Get transactions
-    const result = await query(
+    const rows = db.prepare(
       `SELECT * FROM balance_transactions
        WHERE ${whereClause}
        ORDER BY created_at DESC
-       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      [...params, limit, offset]
-    );
+       LIMIT ? OFFSET ?`
+    ).all(...params, limit, offset);
 
     return {
-      transactions: result.rows.map(row => Balance.formatTransaction(row)),
+      transactions: rows.map(row => Balance.formatTransaction(row)),
       total,
       limit,
       offset
@@ -196,49 +186,48 @@ class Balance {
    * @param {string} userId - The user UUID
    * @param {number} month - Month (1-12)
    * @param {number} year - Year (4 digits)
-   * @returns {Promise<Object>} Monthly summary { month, year, earned, spent, net }
+   * @returns {Object} Monthly summary { month, year, earned, spent, net }
    */
-  static async getMonthlyTotal(userId, month, year) {
+  static getMonthlyTotal(userId, month, year) {
+    const db = getDb();
+
     // Calculate date range for the month
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const startDate = new Date(year, month - 1, 1).toISOString();
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999).toISOString();
 
     // Get earnings (positive amounts with type 'earned')
-    const earnedResult = await query(
+    const earnedRow = db.prepare(
       `SELECT COALESCE(SUM(amount), 0) as total
        FROM balance_transactions
-       WHERE user_id = $1
+       WHERE user_id = ?
        AND type = 'earned'
-       AND created_at >= $2
-       AND created_at <= $3`,
-      [userId, startDate, endDate]
-    );
+       AND created_at >= ?
+       AND created_at <= ?`
+    ).get(userId, startDate, endDate);
 
     // Get spending (negative amounts or type 'spent', 'payout')
-    const spentResult = await query(
+    const spentRow = db.prepare(
       `SELECT COALESCE(SUM(ABS(amount)), 0) as total
        FROM balance_transactions
-       WHERE user_id = $1
+       WHERE user_id = ?
        AND type IN ('spent', 'payout')
-       AND created_at >= $2
-       AND created_at <= $3`,
-      [userId, startDate, endDate]
-    );
+       AND created_at >= ?
+       AND created_at <= ?`
+    ).get(userId, startDate, endDate);
 
     // Get adjustments (can be positive or negative)
-    const adjustmentResult = await query(
+    const adjustmentRow = db.prepare(
       `SELECT COALESCE(SUM(amount), 0) as total
        FROM balance_transactions
-       WHERE user_id = $1
+       WHERE user_id = ?
        AND type = 'adjustment'
-       AND created_at >= $2
-       AND created_at <= $3`,
-      [userId, startDate, endDate]
-    );
+       AND created_at >= ?
+       AND created_at <= ?`
+    ).get(userId, startDate, endDate);
 
-    const earned = parseFloat(earnedResult.rows[0].total) || 0;
-    const spent = parseFloat(spentResult.rows[0].total) || 0;
-    const adjustments = parseFloat(adjustmentResult.rows[0].total) || 0;
+    const earned = parseFloat(earnedRow.total) || 0;
+    const spent = parseFloat(spentRow.total) || 0;
+    const adjustments = parseFloat(adjustmentRow.total) || 0;
 
     return {
       month,
@@ -255,18 +244,21 @@ class Balance {
    * @param {string} userId - The user UUID
    * @param {Date} startDate - Start of range
    * @param {Date} endDate - End of range
-   * @returns {Promise<Object>} Summary with breakdown by type
+   * @returns {Object} Summary with breakdown by type
    */
-  static async getSummary(userId, startDate, endDate) {
-    const result = await query(
+  static getSummary(userId, startDate, endDate) {
+    const db = getDb();
+    const startStr = startDate instanceof Date ? startDate.toISOString() : startDate;
+    const endStr = endDate instanceof Date ? endDate.toISOString() : endDate;
+
+    const rows = db.prepare(
       `SELECT type, SUM(amount) as total, COUNT(*) as count
        FROM balance_transactions
-       WHERE user_id = $1
-       AND created_at >= $2
-       AND created_at <= $3
-       GROUP BY type`,
-      [userId, startDate, endDate]
-    );
+       WHERE user_id = ?
+       AND created_at >= ?
+       AND created_at <= ?
+       GROUP BY type`
+    ).all(userId, startStr, endStr);
 
     const summary = {
       earned: { total: 0, count: 0 },
@@ -276,7 +268,7 @@ class Balance {
       bonus: { total: 0, count: 0 }
     };
 
-    for (const row of result.rows) {
+    for (const row of rows) {
       summary[row.type] = {
         total: parseFloat(row.total) || 0,
         count: parseInt(row.count)
@@ -291,9 +283,9 @@ class Balance {
    * @param {string} userId - The user UUID
    * @param {number} amount - The amount to pay out
    * @param {string} description - Optional description
-   * @returns {Promise<Object>} Transaction record and updated balance
+   * @returns {Object} Transaction record and updated balance
    */
-  static async recordPayout(userId, amount, description = 'Payout') {
+  static recordPayout(userId, amount, description = 'Payout') {
     return Balance.deduct(userId, amount, 'payout', description);
   }
 
@@ -302,35 +294,31 @@ class Balance {
    * @param {string} userId - The user UUID
    * @param {number} amount - The amount to reverse (positive = was added, so we subtract)
    * @param {string} description - Description of the reversal
-   * @returns {Promise<Object>} Transaction record and updated balance
+   * @returns {Object} Transaction record and updated balance
    */
-  static async reverse(userId, amount, description) {
+  static reverse(userId, amount, description) {
+    const db = getDb();
+
     if (amount > 0) {
       // Original was an addition, so we subtract
-      await query(
-        `UPDATE balances SET current_balance = current_balance - $1 WHERE user_id = $2`,
-        [amount, userId]
-      );
+      db.prepare('UPDATE balances SET current_balance = current_balance - ? WHERE user_id = ?').run(amount, userId);
     } else {
       // Original was a deduction, so we add back
-      await query(
-        `UPDATE balances SET current_balance = current_balance + $1 WHERE user_id = $2`,
-        [Math.abs(amount), userId]
-      );
+      db.prepare('UPDATE balances SET current_balance = current_balance + ? WHERE user_id = ?').run(Math.abs(amount), userId);
     }
 
     // Record reversal transaction
-    const transactionResult = await query(
-      `INSERT INTO balance_transactions (user_id, amount, type, description)
-       VALUES ($1, $2, 'adjustment', $3)
-       RETURNING *`,
-      [userId, -amount, description]
-    );
+    const transactionId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.prepare(
+      'INSERT INTO balance_transactions (id, user_id, amount, type, description, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(transactionId, userId, -amount, 'adjustment', description, now);
 
-    const balance = await Balance.get(userId);
+    const transactionRow = db.prepare('SELECT * FROM balance_transactions WHERE id = ?').get(transactionId);
+    const balance = Balance.get(userId);
 
     return {
-      transaction: Balance.formatTransaction(transactionResult.rows[0]),
+      transaction: Balance.formatTransaction(transactionRow),
       balance: balance.currentBalance
     };
   }

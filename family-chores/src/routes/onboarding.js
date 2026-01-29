@@ -7,6 +7,7 @@ const router = express.Router();
 const Household = require('../models/Household');
 const User = require('../models/User');
 const avatars = require('../data/avatars.json');
+const { invalidateUserList } = require('../middleware/cache');
 
 /**
  * POST /api/onboarding/household
@@ -94,6 +95,9 @@ router.post('/api/onboarding/user', async (req, res) => {
       pin: pin || null,
       avatar: avatar || null
     });
+
+    // Invalidate user list cache since a new user was added
+    invalidateUserList();
 
     // Enrich with avatar data
     const avatarData = avatars.find(a => a.id === user.avatar) || null;

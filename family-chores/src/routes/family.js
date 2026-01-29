@@ -5,7 +5,8 @@
 
 const express = require('express');
 const router = express.Router();
-const { query } = require('../db/pool');
+const crypto = require('crypto');
+const { getDb } = require('../db/pool');
 const User = require('../models/User');
 const Household = require('../models/Household');
 const Routine = require('../models/Routine');
@@ -31,21 +32,21 @@ router.get('/api/family/dashboard', requireAuth, requireAdmin, cacheFamilyDashbo
     const todayStr = today.toISOString().split('T')[0];
 
     // Get household info
-    const household = await Household.findById(householdId);
+    const household = Household.findById(householdId);
     if (!household) {
       return res.status(404).json({ error: 'Household not found' });
     }
 
     // Get all users in household
-    const users = await User.findByHousehold(householdId);
+    const users = User.findByHousehold(householdId);
 
     // Build member data for each user
-    const members = await Promise.all(users.map(async (user) => {
+    const members = users.map((user) => {
       // Get user's routines
-      const routines = await Routine.findAll(householdId, user.id);
+      const routines = Routine.findAll(householdId, user.id);
 
       // Get today's completions for this user
-      const completions = await Completion.findByUserAndDate(user.id, today);
+      const completions = Completion.findByUserAndDate(user.id, today);
       const completedTaskIds = new Set(completions.map(c => c.taskId));
 
       // Build routine tasks for today
@@ -87,17 +88,17 @@ router.get('/api/family/dashboard', requireAuth, requireAdmin, cacheFamilyDashbo
       // Get streak data
       let streakCount = 0;
       if (primaryRoutineId) {
-        const streakData = await Completion.getStreakData(user.id, primaryRoutineId);
+        const streakData = Completion.getStreakData(user.id, primaryRoutineId);
         streakCount = streakData.currentCount;
       }
 
       // Get total streak across all routines as fallback
       if (streakCount === 0) {
-        streakCount = await Completion.getTotalStreakCount(user.id);
+        streakCount = Completion.getTotalStreakCount(user.id);
       }
 
       // Get current balance
-      const balance = await Completion.getBalance(user.id);
+      const balance = Completion.getBalance(user.id);
 
       return {
         id: user.id,
@@ -121,7 +122,7 @@ router.get('/api/family/dashboard', requireAuth, requireAdmin, cacheFamilyDashbo
         })),
         routineComplete: totalTasks > 0 && completedTasks === totalTasks
       };
-    }));
+    });
 
     res.json({
       date: todayStr,
@@ -158,7 +159,7 @@ router.post('/api/family/vacation-mode', requireAuth, requireAdmin, async (req, 
       return res.status(400).json({ error: 'enabled must be a boolean' });
     }
 
-    const household = await Household.update(householdId, { vacationMode: enabled });
+    const household = Household.update(householdId, { vacationMode: enabled });
 
     if (!household) {
       return res.status(404).json({ error: 'Household not found' });
@@ -188,9 +189,10 @@ router.post('/api/family/sick-day/:userId', requireAuth, requireAdmin, async (re
     const { userId } = req.params;
     const householdId = req.user.householdId;
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
     // Verify user exists and belongs to this household
-    const user = await User.findById(userId);
+    const user = User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -200,14 +202,15 @@ router.post('/api/family/sick-day/:userId', requireAuth, requireAdmin, async (re
     }
 
     // Get user's routines
-    const routines = await Routine.findAll(householdId, userId);
+    const routines = Routine.findAll(householdId, userId);
 
     // Get today's completions for this user
-    const existingCompletions = await Completion.findByUserAndDate(userId, today);
+    const existingCompletions = Completion.findByUserAndDate(userId, today);
     const completedTaskIds = new Set(existingCompletions.map(c => c.taskId));
 
     // Find all scheduled tasks for today that aren't completed
     const completedNow = [];
+    const db = getDb();
 
     for (const routine of routines) {
       for (const task of routine.tasks) {
@@ -222,11 +225,11 @@ router.post('/api/family/sick-day/:userId', requireAuth, requireAdmin, async (re
         }
 
         // Create completion (without earning money - sick day is a pass)
-        await query(
-          `INSERT INTO completions (task_id, user_id, completion_date)
-           VALUES ($1, $2, $3)`,
-          [task.id, userId, today.toISOString().split('T')[0]]
-        );
+        const completionId = crypto.randomUUID();
+        const now = new Date().toISOString();
+        db.prepare(
+          'INSERT INTO completions (id, task_id, user_id, completed_at, completion_date) VALUES (?, ?, ?, ?, ?)'
+        ).run(completionId, task.id, userId, now, todayStr);
 
         completedNow.push({
           id: task.id,
@@ -264,7 +267,7 @@ router.get('/api/family/member/:userId', requireAuth, requireAdmin, async (req, 
     const today = new Date();
 
     // Verify user exists and belongs to this household
-    const user = await User.findById(userId);
+    const user = User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -274,10 +277,10 @@ router.get('/api/family/member/:userId', requireAuth, requireAdmin, async (req, 
     }
 
     // Get user's routines
-    const routines = await Routine.findAll(householdId, userId);
+    const routines = Routine.findAll(householdId, userId);
 
     // Get today's completions for this user
-    const completions = await Completion.findByUserAndDate(userId, today);
+    const completions = Completion.findByUserAndDate(userId, today);
     const completedTaskIds = new Set(completions.map(c => c.taskId));
 
     // Build detailed routine data
@@ -319,24 +322,24 @@ router.get('/api/family/member/:userId', requireAuth, requireAdmin, async (req, 
     let streakCount = 0;
     let bestStreak = 0;
     if (routines.length > 0) {
-      const streakData = await Completion.getStreakData(userId, routines[0].id);
+      const streakData = Completion.getStreakData(userId, routines[0].id);
       streakCount = streakData.currentCount;
       bestStreak = streakData.bestCount;
     }
 
     // Get current balance
-    const balance = await Completion.getBalance(userId);
+    const balance = Completion.getBalance(userId);
 
     // Get recent balance transactions
-    const transactionsResult = await query(
+    const db = getDb();
+    const transactionRows = db.prepare(
       `SELECT * FROM balance_transactions
-       WHERE user_id = $1
+       WHERE user_id = ?
        ORDER BY created_at DESC
-       LIMIT 10`,
-      [userId]
-    );
+       LIMIT 10`
+    ).all(userId);
 
-    const transactions = transactionsResult.rows.map(row => ({
+    const transactions = transactionRows.map(row => ({
       id: row.id,
       amount: parseFloat(row.amount),
       type: row.type,

@@ -2,7 +2,8 @@
  * Task validation utilities
  */
 
-const VALID_TYPES = ['routine', 'bonus'];
+// Valid task types - must match database schema CHECK constraint
+const VALID_TYPES = ['daily', 'weekly', 'one-time'];
 const VALID_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
 /**

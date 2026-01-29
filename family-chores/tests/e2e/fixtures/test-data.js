@@ -22,7 +22,7 @@ function generateParent(suffix = '') {
     name: `Test Parent ${suffix || testId()}`,
     role: 'parent',
     pin: '1234',
-    avatar: 'robot'
+    avatar: 'lion'  // Using lion from avatars.json
   };
 }
 
@@ -40,15 +40,17 @@ function generateChild(suffix = '') {
 
 /**
  * Generate test task data
+ * Valid types: 'daily', 'weekly', 'one-time' (must match db schema)
+ * Schedule: array of integers 0-6 (0=Sunday, 6=Saturday)
  */
-function generateTask(suffix = '', type = 'recurring') {
+function generateTask(suffix = '', type = 'daily') {
   return {
     name: `Test Task ${suffix || testId()}`,
     type,
     description: 'Test task description',
     icon: 'star',
     dollarValue: 1.50,
-    schedule: type === 'recurring' ? ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] : []
+    schedule: type !== 'one-time' ? [1, 2, 3, 4, 5] : []  // Mon-Fri
   };
 }
 
@@ -72,12 +74,19 @@ const TEST_PINS = {
 
 /**
  * Avatar IDs that should exist in the system
+ * Must match the IDs in src/data/avatars.json
  */
 const AVATARS = {
-  robot: 'robot',
-  unicorn: 'unicorn',
-  dinosaur: 'dinosaur',
-  cat: 'cat'
+  cat: 'cat',
+  dog: 'dog',
+  bear: 'bear',
+  rabbit: 'rabbit',
+  fox: 'fox',
+  owl: 'owl',
+  penguin: 'penguin',
+  lion: 'lion',
+  elephant: 'elephant',
+  unicorn: 'unicorn'
 };
 
 module.exports = {

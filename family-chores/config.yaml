@@ -15,15 +15,5 @@ webui: "http://[HOST]:[PORT:3000]"
 startup: application
 boot: auto
 init: false
-options:
-  postgres_host: ""
-  postgres_port: 5432
-  postgres_db: "family_chores"
-  postgres_user: ""
-  postgres_password: ""
-schema:
-  postgres_host: str
-  postgres_port: int
-  postgres_db: str
-  postgres_user: str
-  postgres_password: password
+map:
+  - data:rw
