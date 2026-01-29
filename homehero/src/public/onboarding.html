@@ -538,16 +538,14 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Create a PIN (4-6 digits)</label>
+          <label class="form-label">Create a PIN (4 digits)</label>
           <div class="pin-container" id="parent-pin-container">
             <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="0">
             <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="1">
             <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="2">
             <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="3">
-            <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="4">
-            <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="5">
           </div>
-          <div class="form-error" id="parent-pin-error">PIN must be 4-6 digits</div>
+          <div class="form-error" id="parent-pin-error">PIN must be 4 digits</div>
         </div>
 
         <div class="button-group">
@@ -587,6 +585,20 @@
             </div>
 
             <div class="form-group">
+              <label class="form-label">Role</label>
+              <div class="role-selector" style="display: flex; gap: 10px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 10px 15px; border-radius: 10px; background: #F5F5F5; flex: 1; justify-content: center;">
+                  <input type="radio" name="member-role" value="child" checked style="accent-color: #7E57C2;">
+                  <span>Child</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 10px 15px; border-radius: 10px; background: #F5F5F5; flex: 1; justify-content: center;">
+                  <input type="radio" name="member-role" value="parent" style="accent-color: #7E57C2;">
+                  <span>Parent (Admin)</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
               <label class="form-label">Choose Avatar</label>
               <div class="avatar-grid" id="child-avatar-grid">
                 <!-- Avatars loaded dynamically -->
@@ -595,15 +607,14 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">PIN (optional, 4-6 digits)</label>
+              <label class="form-label" id="child-pin-label">PIN (optional, 4 digits)</label>
               <div class="pin-container" id="child-pin-container">
                 <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="0">
                 <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="1">
                 <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="2">
                 <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="3">
-                <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="4">
-                <input type="password" class="pin-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="5">
               </div>
+              <div class="form-error" id="child-pin-error">PIN must be 4 digits</div>
             </div>
 
             <div class="button-group">
@@ -937,7 +948,7 @@
         hideError('parent-avatar-error');
       }
 
-      if (pin.length < 4) {
+      if (pin.length !== 4) {
         showError('parent-pin-error');
         hasError = true;
       } else {
@@ -1062,6 +1073,7 @@
       const nameInput = document.getElementById('child-name');
       const name = nameInput.value.trim();
       const pin = getPin('child-pin-container');
+      const role = document.querySelector('input[name="member-role"]:checked').value;
 
       let hasError = false;
 
@@ -1081,6 +1093,17 @@
         hideError('child-avatar-error');
       }
 
+      // PIN is required for parents, optional for children
+      if (role === 'parent' && pin.length !== 4) {
+        showError('child-pin-error', 'Parents require a 4-digit PIN');
+        hasError = true;
+      } else if (pin.length > 0 && pin.length !== 4) {
+        showError('child-pin-error', 'PIN must be exactly 4 digits');
+        hasError = true;
+      } else {
+        hideError('child-pin-error');
+      }
+
       if (hasError) {
         return;
       }
@@ -1092,12 +1115,12 @@
         const body = {
           householdId: householdId,
           name: name,
-          role: 'child',
+          role: role,
           avatar: selectedChildAvatar
         };
 
-        // Only include PIN if provided (4+ digits)
-        if (pin.length >= 4) {
+        // Only include PIN if provided (exactly 4 digits)
+        if (pin.length === 4) {
           body.pin = pin;
         }
 

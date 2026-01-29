@@ -59,18 +59,18 @@ router.post('/api/onboarding/user', async (req, res) => {
     return res.status(400).json({ error: 'Role must be "parent" or "child"' });
   }
 
-  // PIN validation - required for parents, optional for children
+  // PIN validation - required for parents, optional for children (exactly 4 digits)
   if (role === 'parent') {
-    if (!pin || typeof pin !== 'string' || pin.length < 4 || pin.length > 6) {
-      return res.status(400).json({ error: 'Parents require a PIN of 4-6 digits' });
+    if (!pin || typeof pin !== 'string' || pin.length !== 4) {
+      return res.status(400).json({ error: 'Parents require a 4-digit PIN' });
     }
     if (!/^\d+$/.test(pin)) {
       return res.status(400).json({ error: 'PIN must contain only digits' });
     }
   } else if (pin) {
     // Child has optional PIN
-    if (typeof pin !== 'string' || pin.length < 4 || pin.length > 6) {
-      return res.status(400).json({ error: 'PIN must be 4-6 digits' });
+    if (typeof pin !== 'string' || pin.length !== 4) {
+      return res.status(400).json({ error: 'PIN must be exactly 4 digits' });
     }
     if (!/^\d+$/.test(pin)) {
       return res.status(400).json({ error: 'PIN must contain only digits' });

@@ -58,5 +58,125 @@
     "name": "Unicorn",
     "emoji": "🦄",
     "color": "#DDA0DD"
+  },
+  {
+    "id": "panda",
+    "name": "Panda",
+    "emoji": "🐼",
+    "color": "#E8E8E8"
+  },
+  {
+    "id": "koala",
+    "name": "Koala",
+    "emoji": "🐨",
+    "color": "#A9A9A9"
+  },
+  {
+    "id": "monkey",
+    "name": "Monkey",
+    "emoji": "🐵",
+    "color": "#D2691E"
+  },
+  {
+    "id": "tiger",
+    "name": "Tiger",
+    "emoji": "🐯",
+    "color": "#FFA500"
+  },
+  {
+    "id": "frog",
+    "name": "Frog",
+    "emoji": "🐸",
+    "color": "#90EE90"
+  },
+  {
+    "id": "butterfly",
+    "name": "Butterfly",
+    "emoji": "🦋",
+    "color": "#87CEEB"
+  },
+  {
+    "id": "dragon",
+    "name": "Dragon",
+    "emoji": "🐉",
+    "color": "#228B22"
+  },
+  {
+    "id": "dinosaur",
+    "name": "Dinosaur",
+    "emoji": "🦕",
+    "color": "#20B2AA"
+  },
+  {
+    "id": "whale",
+    "name": "Whale",
+    "emoji": "🐳",
+    "color": "#1E90FF"
+  },
+  {
+    "id": "dolphin",
+    "name": "Dolphin",
+    "emoji": "🐬",
+    "color": "#00CED1"
+  },
+  {
+    "id": "octopus",
+    "name": "Octopus",
+    "emoji": "🐙",
+    "color": "#FF6347"
+  },
+  {
+    "id": "bee",
+    "name": "Bee",
+    "emoji": "🐝",
+    "color": "#FFD700"
+  },
+  {
+    "id": "ladybug",
+    "name": "Ladybug",
+    "emoji": "🐞",
+    "color": "#DC143C"
+  },
+  {
+    "id": "turtle",
+    "name": "Turtle",
+    "emoji": "🐢",
+    "color": "#2E8B57"
+  },
+  {
+    "id": "shark",
+    "name": "Shark",
+    "emoji": "🦈",
+    "color": "#708090"
+  },
+  {
+    "id": "star",
+    "name": "Star",
+    "emoji": "⭐",
+    "color": "#FFD700"
+  },
+  {
+    "id": "rocket",
+    "name": "Rocket",
+    "emoji": "🚀",
+    "color": "#FF4500"
+  },
+  {
+    "id": "robot",
+    "name": "Robot",
+    "emoji": "🤖",
+    "color": "#708090"
+  },
+  {
+    "id": "alien",
+    "name": "Alien",
+    "emoji": "👽",
+    "color": "#9ACD32"
+  },
+  {
+    "id": "ghost",
+    "name": "Ghost",
+    "emoji": "👻",
+    "color": "#F5F5F5"
   }
 ]
