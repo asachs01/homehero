@@ -26,8 +26,7 @@ Select your avatar and enter your PIN to log in.
 
 ### Prerequisites
 
-- Home Assistant with Supervisor installed
-- PostgreSQL database (can use the Home Assistant PostgreSQL add-on)
+- Home Assistant with Supervisor installed (Home Assistant OS or Supervised)
 
 ### Adding the Repository
 
@@ -45,17 +44,9 @@ Select your avatar and enter your PIN to log in.
 
 ### Configuration
 
-Configure the add-on with your PostgreSQL connection details:
+No configuration required! The add-on is self-contained with an embedded SQLite database. Just install and start.
 
-```yaml
-postgres_host: "your-postgres-host"
-postgres_port: 5432
-postgres_db: "family_chores"
-postgres_user: "your-username"
-postgres_password: "your-password"
-```
-
-See [Installation Guide](docs/INSTALLATION.md) for detailed setup instructions.
+The database is automatically created at `/data/family-chores.db` inside the add-on container, which persists across restarts and updates.
 
 ## Usage
 
@@ -93,7 +84,7 @@ The Family Household Manager provides a RESTful API for all operations. See the 
 ## Tech Stack
 
 - **Backend**: Node.js 20+ with Express.js
-- **Database**: PostgreSQL
+- **Database**: SQLite (embedded, self-contained)
 - **Authentication**: JWT tokens with PIN-based login
 - **Frontend**: Vanilla JavaScript with HTML/CSS
 - **Container**: Alpine Linux-based Docker image
