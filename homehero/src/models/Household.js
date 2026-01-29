@@ -41,12 +41,28 @@ class Household {
   }
 
   /**
-   * Find the first household (for single-household setups)
+   * Find the primary household (for single-household setups)
+   * Prefers households with users over empty ones
    * @returns {Object|null} The household or null if none exist
    */
   static findFirst() {
     const db = getDb();
-    const row = db.prepare('SELECT * FROM households ORDER BY created_at ASC LIMIT 1').get();
+
+    // First, try to find a household that has users (most likely the real one)
+    const rowWithUsers = db.prepare(`
+      SELECT h.* FROM households h
+      INNER JOIN users u ON u.household_id = h.id
+      GROUP BY h.id
+      ORDER BY h.created_at DESC
+      LIMIT 1
+    `).get();
+
+    if (rowWithUsers) {
+      return Household.formatHousehold(rowWithUsers);
+    }
+
+    // Fall back to the most recent household if no users exist yet
+    const row = db.prepare('SELECT * FROM households ORDER BY created_at DESC LIMIT 1').get();
 
     if (!row) {
       return null;

@@ -102,7 +102,8 @@ async function initialize() {
   if (!exists) {
     console.log('Database: Tables not found, running schema...');
     runSchema();
-    createDefaultHousehold();
+    // Don't create a default household - let onboarding handle it
+    // This prevents orphan households that confuse the onboarding status check
   } else {
     console.log('Database: Tables already exist');
   }
