@@ -38,7 +38,7 @@ That's it! The add-on is self-contained with an embedded SQLite database - no ex
 If the add-on starts successfully, you'll see:
 ```
 [INFO] Starting HomeHero...
-[INFO] Using SQLite database at /data/family-chores.db
+[INFO] Using SQLite database at /data/homehero.db
 HomeHero running on port 3000
 ```
 
@@ -100,7 +100,7 @@ http://[YOUR_HA_IP]:3000
 
 ### "No household found" After Restart
 
-The SQLite database is stored at `/data/family-chores.db` inside the add-on container. This directory persists across restarts and updates. If data is lost:
+The SQLite database is stored at `/data/homehero.db` inside the add-on container. This directory persists across restarts and updates. If data is lost:
 - Check the add-on logs for database errors
 - Verify the `/data` directory is mounted correctly
 
@@ -115,7 +115,7 @@ The SQLite database is stored at `/data/family-chores.db` inside the add-on cont
 
 ### Backing Up Data
 
-The HomeHero stores all data in SQLite at `/data/family-chores.db`.
+The HomeHero stores all data in SQLite at `/data/homehero.db`.
 
 **Using Home Assistant**:
 - Create a full Home Assistant backup
@@ -132,7 +132,7 @@ The SQLite database file can be copied directly while the add-on is stopped.
 
 **Manual restore**:
 1. Stop the add-on
-2. Replace `/data/family-chores.db` with your backup
+2. Replace `/data/homehero.db` with your backup
 3. Start the add-on
 
 ## Updating

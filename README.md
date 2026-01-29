@@ -46,7 +46,7 @@ Select your avatar and enter your PIN to log in.
 
 No configuration required! The add-on is self-contained with an embedded SQLite database. Just install and start.
 
-The database is automatically created at `/data/family-chores.db` inside the add-on container, which persists across restarts and updates.
+The database is automatically created at `/data/homehero.db` inside the add-on container, which persists across restarts and updates.
 
 ## Usage
 

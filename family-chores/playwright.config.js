@@ -1,5 +1,5 @@
 /**
- * Playwright configuration for Family Household Manager E2E tests
+ * Playwright configuration for HomeHero E2E tests
  * @see https://playwright.dev/docs/test-configuration
  */
 

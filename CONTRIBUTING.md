@@ -1,6 +1,6 @@
-# Contributing to Family Household Manager
+# Contributing to HomeHero
 
-Thank you for your interest in contributing to the Family Household Manager! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to HomeHero! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 
@@ -12,7 +12,7 @@ Please be respectful and constructive in all interactions. We're building softwa
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/homeassistantChores.git
+   git clone https://github.com/asachs01/homeassistantChores.git
    cd homeassistantChores
    ```
 
@@ -22,31 +22,23 @@ Please be respectful and constructive in all interactions. We're building softwa
    npm install
    ```
 
-3. **Set up PostgreSQL**
-
-   You'll need a PostgreSQL database for development. You can:
-   - Install PostgreSQL locally
-   - Use Docker: `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:15`
-   - Use an existing Home Assistant PostgreSQL add-on
-
-4. **Configure environment variables**
-
-   Create a `.env` file in the `family-chores` directory:
-   ```env
-   POSTGRES_HOST=localhost
-   POSTGRES_PORT=5432
-   POSTGRES_DB=family_chores_dev
-   POSTGRES_USER=postgres
-   POSTGRES_PASSWORD=your_password
-   JWT_SECRET=your_dev_secret_key
-   ```
-
-5. **Start the development server**
+3. **Start the development server**
    ```bash
    npm run dev
    ```
 
    The server will start with hot-reloading enabled at `http://localhost:3000`.
+
+   SQLite database will be automatically created at `./data/homehero.db`.
+
+4. **Optional: Configure environment variables**
+
+   Create a `.env` file in the `family-chores` directory:
+   ```env
+   JWT_SECRET=your_dev_secret_key
+   PORT=3000
+   DATA_DIR=./data
+   ```
 
 ### Running Tests
 
@@ -80,7 +72,7 @@ We value **simplicity, readability, and maintainability** above all else.
 - Use `const` by default, `let` when reassignment is needed
 - Use meaningful variable and function names
 - Add JSDoc comments to public functions
-- Use async/await for asynchronous code
+- Use synchronous better-sqlite3 API for database operations
 
 ### File Organization
 
@@ -95,16 +87,16 @@ We value **simplicity, readability, and maintainability** above all else.
 /**
  * Get tasks for a specific user on a given date
  * @param {string} userId - The user's UUID
- * @param {Date} date - The date to check
- * @returns {Promise<Array>} Array of task objects
+ * @param {string} date - The date in YYYY-MM-DD format
+ * @returns {Array} Array of task objects
  */
-async function getTasksForUser(userId, date) {
-  const result = await query(
-    'SELECT * FROM tasks WHERE user_id = $1 AND scheduled_date = $2',
-    [userId, date.toISOString().split('T')[0]]
-  );
+function getTasksForUser(userId, date) {
+  const db = getDb();
+  const rows = db.prepare(
+    'SELECT * FROM tasks WHERE user_id = ? AND scheduled_date = ?'
+  ).all(userId, date);
 
-  return result.rows.map(formatTask);
+  return rows.map(formatTask);
 }
 ```
 
@@ -118,7 +110,7 @@ When reporting a bug, please include:
 2. **Steps to Reproduce** - Numbered steps to trigger the bug
 3. **Expected Behavior** - What should happen
 4. **Actual Behavior** - What actually happens
-5. **Environment** - Node.js version, PostgreSQL version, browser, etc.
+5. **Environment** - Node.js version, browser, Home Assistant version
 6. **Screenshots** - If applicable
 
 ### Feature Requests

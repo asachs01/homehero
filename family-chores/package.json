@@ -1,7 +1,7 @@
 {
-  "name": "family-chores",
-  "version": "1.0.0",
-  "description": "Family Household Manager Home Assistant add-on",
+  "name": "homehero",
+  "version": "1.1.0",
+  "description": "HomeHero - Gamified chore tracking for families",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

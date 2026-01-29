@@ -1,5 +1,5 @@
 /**
- * Screenshot Generator for Family Household Manager
+ * Screenshot Generator for HomeHero
  *
  * This script uses Playwright to capture screenshots of the application's UI.
  * Run with: npm run screenshots
@@ -341,7 +341,7 @@ async function screenshotAdminPage(page) {
  */
 async function main() {
   console.log('===========================================');
-  console.log('Family Household Manager Screenshot Generator');
+  console.log('HomeHero Screenshot Generator');
   console.log('===========================================');
   console.log(`\nOutput directory: ${CONFIG.outputDir}`);
   console.log(`Viewport: ${CONFIG.viewport.width}x${CONFIG.viewport.height}`);

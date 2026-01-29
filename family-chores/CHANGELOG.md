@@ -108,7 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Migrated database from PostgreSQL to SQLite for self-contained operation
   - Replaced `pg` library with `better-sqlite3` for synchronous, embedded database
-  - Database stored at `/data/family-chores.db` in Home Assistant, with fallback to `./data/` for development
+  - Database stored at `/data/homehero.db` in Home Assistant, with fallback to `./data/` for development
   - Enabled WAL mode for better concurrency
   - All models updated to use SQLite syntax (? placeholders instead of $1, $2, etc.)
   - UUID generation using `crypto.randomUUID()` instead of PostgreSQL's gen_random_uuid()

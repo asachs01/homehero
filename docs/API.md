@@ -1,6 +1,6 @@
 # API Documentation
 
-The Family Household Manager provides a RESTful API for all operations. All endpoints (except health checks and onboarding) require authentication via JWT tokens.
+HomeHero provides a RESTful API for all operations. All endpoints (except health checks and onboarding) require authentication via JWT tokens.
 
 ## Base URL
 

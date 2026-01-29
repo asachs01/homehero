@@ -1,4 +1,4 @@
--- Family Household Manager Database Schema (SQLite)
+-- HomeHero Database Schema (SQLite)
 -- Version: 1.0.0
 
 -- Households table

@@ -38,7 +38,7 @@ function getDataDir() {
 }
 
 const DATA_DIR = getDataDir();
-const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'family-chores.db');
+const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'homehero.db');
 
 // Ensure data directory exists
 function ensureDataDir() {
