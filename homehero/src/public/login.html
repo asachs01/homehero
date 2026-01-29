@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HomeHero - Login</title>
   <!-- Preconnect hints for performance -->
-  <link rel="preconnect" href="/api" crossorigin>
-  <link rel="dns-prefetch" href="/api">
+  <link rel="preconnect" href="./api" crossorigin>
+  <link rel="dns-prefetch" href="./api">
   <!-- Ingress support for Home Assistant sidebar -->
-  <script src="/js/ingress.js"></script>
+  <script src="./js/ingress.js"></script>
   <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;background:linear-gradient(135deg,#E8F5E9 0%,#F3E5F5 50%,#E3F2FD 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}h1{color:#5D4E6D;margin-bottom:30px;font-size:2rem;text-align:center}.container{width:100%;max-width:500px}#user-selection{display:block}.users-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:15px;margin-bottom:20px}.user-card{background:#fff;border-radius:20px;padding:20px;text-align:center;cursor:pointer;transition:transform .2s,box-shadow .2s;border:3px solid transparent;box-shadow:0 4px 15px rgba(0,0,0,.1)}.user-card:hover{transform:translateY(-5px);box-shadow:0 8px 25px rgba(0,0,0,.15)}.user-card:active{transform:scale(.95)}.user-card.selected{border-color:#9575CD;background:#F3E5F5}.user-avatar{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 10px}.user-name{font-size:1.1rem;font-weight:600;color:#5D4E6D}#pin-entry{display:none}.back-button{background:none;border:none;color:#7E57C2;font-size:1rem;cursor:pointer;display:flex;align-items:center;gap:5px;margin-bottom:20px}.back-button:hover{text-decoration:underline}.selected-user{display:flex;align-items:center;gap:15px;background:#fff;padding:15px 20px;border-radius:15px;margin-bottom:25px;box-shadow:0 4px 15px rgba(0,0,0,.1)}.selected-user .avatar{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px}.selected-user .name{font-size:1.3rem;font-weight:600;color:#5D4E6D}.pin-display{background:#fff;border-radius:15px;padding:20px;text-align:center;margin-bottom:20px;box-shadow:0 4px 15px rgba(0,0,0,.1)}.pin-dots{display:flex;justify-content:center;gap:15px;margin-bottom:10px}.pin-dot{width:20px;height:20px;border-radius:50%;background:#E0E0E0;transition:background .2s}.pin-dot.filled{background:#7E57C2}.pin-hint{color:#9E9E9E;font-size:.9rem}.error-message{color:#E53935;text-align:center;margin-bottom:15px;min-height:24px;font-weight:500}.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:300px;margin:0 auto}.numpad-btn{background:#fff;border:none;border-radius:50%;width:80px;height:80px;font-size:1.8rem;font-weight:600;color:#5D4E6D;cursor:pointer;transition:background .2s,transform .1s;box-shadow:0 4px 10px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;margin:0 auto}.numpad-btn:hover{background:#F3E5F5}.numpad-btn:active{transform:scale(.95);background:#E1BEE7}.numpad-btn.action{background:#F5F5F5;font-size:1.2rem}.numpad-btn.action:hover{background:#EEE}.numpad-btn.submit{background:#81C784;color:#fff}.numpad-btn.submit:hover{background:#66BB6A}.numpad-btn.submit:disabled{background:#C8E6C9;cursor:not-allowed}.loading{display:none;text-align:center;padding:20px;color:#7E57C2}.loading.visible{display:block}.empty-state{text-align:center;padding:40px;color:#9E9E9E}.empty-state-icon{font-size:4rem;margin-bottom:15px}</style>
 </head>
 <body>
@@ -88,7 +88,7 @@
     // Load users from API
     async function loadUsers() {
       try {
-        const response = await fetch('/api/users');
+        const response = await fetch('./api/users');
         if (!response.ok) throw new Error('Failed to load users');
 
         users = await response.json();
@@ -227,7 +227,7 @@
       clearError();
 
       try {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch('./api/auth/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

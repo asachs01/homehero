@@ -1,53 +1,52 @@
 /**
  * Home Assistant Ingress Support
- * Handles redirects and URL generation when running behind HA's ingress proxy
+ *
+ * With relative paths, we don't need complex ingress path detection.
+ * The browser's URL resolution handles both ingress and direct access automatically.
+ *
+ * Example:
+ * - Ingress URL: https://ha:8123/api/hassio_ingress/TOKEN/index.html
+ *   - './api/foo' resolves to: https://ha:8123/api/hassio_ingress/TOKEN/api/foo ✓
+ * - Direct URL: http://localhost:3000/index.html
+ *   - './api/foo' resolves to: http://localhost:3000/api/foo ✓
  */
-
-// Cache the ingress path after first fetch
-let cachedIngressPath = null;
 
 /**
- * Get the ingress base path (if running in ingress mode)
- * @returns {Promise<string>} The base path (empty string if not in ingress)
+ * Redirect to a path relative to current location
+ * Works correctly in both ingress and direct access modes
+ * @param {string} path - The path to redirect to (e.g., 'login.html' or './login.html')
  */
-async function getIngressPath() {
-  if (cachedIngressPath !== null) {
-    return cachedIngressPath;
-  }
-
-  try {
-    const response = await fetch('/api/ingress-info');
-    if (response.ok) {
-      const data = await response.json();
-      cachedIngressPath = data.ingressPath || '';
-      return cachedIngressPath;
-    }
-  } catch (e) {
-    console.warn('Failed to fetch ingress info:', e);
-  }
-
-  cachedIngressPath = '';
-  return cachedIngressPath;
+function ingressRedirect(path) {
+  // Remove leading slash or ./ if present, then add ./
+  const cleanPath = path.replace(/^\.?\//, '');
+  window.location.href = './' + cleanPath;
 }
 
 /**
- * Redirect to a path, handling ingress base path automatically
- * @param {string} path - The path to redirect to (e.g., '/login.html')
- */
-async function ingressRedirect(path) {
-  const basePath = await getIngressPath();
-  window.location.href = basePath + path;
-}
-
-/**
- * Synchronous redirect using cached ingress path
- * Use this when you need immediate redirect and have already called getIngressPath()
+ * Synchronous version of ingressRedirect
  * @param {string} path - The path to redirect to
  */
 function ingressRedirectSync(path) {
-  const basePath = cachedIngressPath || '';
-  window.location.href = basePath + path;
+  ingressRedirect(path);
 }
 
-// Pre-fetch ingress path on script load
-getIngressPath();
+/**
+ * Get the base URL for API calls (always relative)
+ * @returns {string} The base URL for API calls
+ */
+function getApiBase() {
+  return './api';
+}
+
+/**
+ * Make a fetch call to an API endpoint
+ * Handles relative paths automatically for ingress compatibility
+ * @param {string} endpoint - The API endpoint (e.g., '/auth/login' or 'auth/login')
+ * @param {Object} options - Fetch options
+ * @returns {Promise<Response>} The fetch response
+ */
+function apiFetch(endpoint, options = {}) {
+  // Remove leading slash if present
+  const cleanEndpoint = endpoint.replace(/^\//, '');
+  return fetch('./api/' + cleanEndpoint, options);
+}

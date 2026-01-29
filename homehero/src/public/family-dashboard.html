@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Family Dashboard - HomeHero</title>
   <!-- Preconnect hints for performance -->
-  <link rel="preconnect" href="/api" crossorigin>
-  <link rel="dns-prefetch" href="/api">
+  <link rel="preconnect" href="./api" crossorigin>
+  <link rel="dns-prefetch" href="./api">
   <!-- Ingress support for Home Assistant sidebar -->
-  <script src="/js/ingress.js"></script>
+  <script src="./js/ingress.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -809,7 +809,7 @@
       <div class="access-denied-icon">&#x1F6AB;</div>
       <div class="access-denied-title">Parent Access Required</div>
       <div class="access-denied-text">This page is only available to parents.</div>
-      <a href="/dashboard.html" class="back-to-dashboard-btn">Go to My Dashboard</a>
+      <a href="./dashboard.html" class="back-to-dashboard-btn">Go to My Dashboard</a>
     </div>
 
     <!-- Error State -->
@@ -960,7 +960,7 @@
 
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/family/dashboard', {
+        var response = await fetch('./api/family/dashboard', {
           headers: {
             'Authorization': 'Bearer ' + token
           }
@@ -1030,7 +1030,7 @@
     async function toggleVacationMode(enabled) {
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/family/vacation-mode', {
+        var response = await fetch('./api/family/vacation-mode', {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + token,
@@ -1289,7 +1289,7 @@
 
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/family/sick-day/' + userId, {
+        var response = await fetch('./api/family/sick-day/' + userId, {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + token,
@@ -1343,7 +1343,7 @@
 
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/family/member/' + member.id, {
+        var response = await fetch('./api/family/member/' + member.id, {
           headers: {
             'Authorization': 'Bearer ' + token
           }

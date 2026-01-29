@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HomeHero</title>
   <!-- Ingress support for Home Assistant sidebar -->
-  <script src="/js/ingress.js"></script>
+  <script src="./js/ingress.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -45,7 +45,7 @@
     async function init() {
       // Check if onboarding is complete
       try {
-        const statusResponse = await fetch('/api/onboarding/status');
+        const statusResponse = await fetch('./api/onboarding/status');
         const status = await statusResponse.json();
 
         if (!status.complete) {
@@ -64,7 +64,7 @@
       if (token && userData) {
         // Validate token is still good
         try {
-          const response = await fetch('/api/dashboard', {
+          const response = await fetch('./api/dashboard', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
 

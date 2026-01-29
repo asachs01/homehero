@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel - HomeHero</title>
   <!-- Ingress support for Home Assistant sidebar -->
-  <script src="/js/ingress.js"></script>
+  <script src="./js/ingress.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -904,7 +904,7 @@
       </div>
 
       <div class="header-actions">
-        <a href="/family-dashboard.html" class="nav-btn">&#x1F3E0; Family Dashboard</a>
+        <a href="./family-dashboard.html" class="nav-btn">&#x1F3E0; Family Dashboard</a>
         <button class="logout-btn" onclick="logout()">Log Out</button>
       </div>
     </div>
@@ -923,7 +923,7 @@
       <div class="access-denied-icon">&#x1F6AB;</div>
       <div class="access-denied-title">Parent Access Required</div>
       <div class="access-denied-text">This page is only available to parents.</div>
-      <a href="/dashboard.html" class="back-btn">Go to My Dashboard</a>
+      <a href="./dashboard.html" class="back-btn">Go to My Dashboard</a>
     </div>
 
     <!-- Admin Panel -->
@@ -1265,9 +1265,9 @@
         var token = localStorage.getItem('token');
 
         var [usersRes, tasksRes, routinesRes] = await Promise.all([
-          fetch('/api/admin/users', { headers: { 'Authorization': 'Bearer ' + token } }),
-          fetch('/api/admin/tasks', { headers: { 'Authorization': 'Bearer ' + token } }),
-          fetch('/api/admin/routines', { headers: { 'Authorization': 'Bearer ' + token } })
+          fetch('./api/admin/users', { headers: { 'Authorization': 'Bearer ' + token } }),
+          fetch('./api/admin/tasks', { headers: { 'Authorization': 'Bearer ' + token } }),
+          fetch('./api/admin/routines', { headers: { 'Authorization': 'Bearer ' + token } })
         ]);
 
         if (usersRes.status === 401 || tasksRes.status === 401 || routinesRes.status === 401) {
@@ -1499,7 +1499,7 @@
     async function deleteUser(id) {
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/admin/users/' + id, {
+        var response = await fetch('./api/admin/users/' + id, {
           method: 'DELETE',
           headers: { 'Authorization': 'Bearer ' + token }
         });
@@ -1790,7 +1790,7 @@
     async function deleteTask(id) {
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/admin/tasks/' + id, {
+        var response = await fetch('./api/admin/tasks/' + id, {
           method: 'DELETE',
           headers: { 'Authorization': 'Bearer ' + token }
         });
@@ -2068,7 +2068,7 @@
           for (var i = 0; i < existingTaskIds.length; i++) {
             var tid = existingTaskIds[i];
             if (!newTaskIds.includes(tid)) {
-              await fetch('/api/admin/routines/' + id + '/tasks/' + tid, {
+              await fetch('./api/admin/routines/' + id + '/tasks/' + tid, {
                 method: 'DELETE',
                 headers: { 'Authorization': 'Bearer ' + token }
               });
@@ -2079,7 +2079,7 @@
           for (var j = 0; j < selectedTasks.length; j++) {
             var st = selectedTasks[j];
             if (!existingTaskIds.includes(st.taskId)) {
-              await fetch('/api/admin/routines/' + id + '/tasks', {
+              await fetch('./api/admin/routines/' + id + '/tasks', {
                 method: 'POST',
                 headers: {
                   'Authorization': 'Bearer ' + token,
@@ -2092,7 +2092,7 @@
 
           // Reorder
           if (newTaskIds.length > 0) {
-            await fetch('/api/admin/routines/' + id + '/tasks/reorder', {
+            await fetch('./api/admin/routines/' + id + '/tasks/reorder', {
               method: 'PUT',
               headers: {
                 'Authorization': 'Bearer ' + token,
@@ -2125,7 +2125,7 @@
     async function deleteRoutine(id) {
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/admin/routines/' + id, {
+        var response = await fetch('./api/admin/routines/' + id, {
           method: 'DELETE',
           headers: { 'Authorization': 'Bearer ' + token }
         });

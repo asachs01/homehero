@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HomeHero - Setup</title>
   <!-- Preconnect hints for performance -->
-  <link rel="preconnect" href="/api" crossorigin>
-  <link rel="dns-prefetch" href="/api">
+  <link rel="preconnect" href="./api" crossorigin>
+  <link rel="dns-prefetch" href="./api">
   <!-- Ingress support for Home Assistant sidebar -->
-  <script src="/js/ingress.js"></script>
+  <script src="./js/ingress.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -664,7 +664,7 @@
     // Check onboarding status
     async function checkOnboardingStatus() {
       try {
-        const response = await fetch('/api/onboarding/status');
+        const response = await fetch('./api/onboarding/status');
         const data = await response.json();
 
         if (data.complete) {
@@ -683,7 +683,7 @@
     // Load avatars from API
     async function loadAvatars() {
       try {
-        const response = await fetch('/api/avatars');
+        const response = await fetch('./api/avatars');
         avatars = await response.json();
         renderAvatarGrids();
       } catch (err) {
@@ -890,7 +890,7 @@
       setButtonLoading(btn, true);
 
       try {
-        const response = await fetch('/api/onboarding/household', {
+        const response = await fetch('./api/onboarding/household', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: name })
@@ -952,7 +952,7 @@
       setButtonLoading(btn, true);
 
       try {
-        const response = await fetch('/api/onboarding/user', {
+        const response = await fetch('./api/onboarding/user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1101,7 +1101,7 @@
           body.pin = pin;
         }
 
-        const response = await fetch('/api/onboarding/user', {
+        const response = await fetch('./api/onboarding/user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)

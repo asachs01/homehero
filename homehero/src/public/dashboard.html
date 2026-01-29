@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Chores - HomeHero</title>
   <!-- Preconnect hints for performance -->
-  <link rel="preconnect" href="/api" crossorigin>
-  <link rel="dns-prefetch" href="/api">
+  <link rel="preconnect" href="./api" crossorigin>
+  <link rel="dns-prefetch" href="./api">
   <!-- Ingress support for Home Assistant sidebar -->
-  <script src="/js/ingress.js"></script>
+  <script src="./js/ingress.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -1092,7 +1092,7 @@
 
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/dashboard', {
+        const response = await fetch('./api/dashboard', {
           headers: {
             'Authorization': 'Bearer ' + token
           }
@@ -1329,7 +1329,7 @@
 
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/dashboard/complete/' + taskId, {
+        var response = await fetch('./api/dashboard/complete/' + taskId, {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + token,
@@ -1396,7 +1396,7 @@
     async function undoCompletion(completionId, cardElement) {
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/dashboard/undo/' + completionId, {
+        var response = await fetch('./api/dashboard/undo/' + completionId, {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + token,
@@ -1566,7 +1566,7 @@
     async function loadNotifications() {
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/notifications?limit=20', {
+        var response = await fetch('./api/notifications?limit=20', {
           headers: {
             'Authorization': 'Bearer ' + token
           }
@@ -1597,7 +1597,7 @@
     async function loadUnreadCount() {
       try {
         var token = localStorage.getItem('token');
-        var response = await fetch('/api/notifications/unread-count', {
+        var response = await fetch('./api/notifications/unread-count', {
           headers: {
             'Authorization': 'Bearer ' + token
           }
@@ -1758,7 +1758,7 @@
     async function markNotificationRead(id) {
       try {
         var token = localStorage.getItem('token');
-        await fetch('/api/notifications/' + id + '/read', {
+        await fetch('./api/notifications/' + id + '/read', {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + token
@@ -1787,7 +1787,7 @@
     async function markAllNotificationsRead() {
       try {
         var token = localStorage.getItem('token');
-        await fetch('/api/notifications/read-all', {
+        await fetch('./api/notifications/read-all', {
           method: 'POST',
           headers: {
             'Authorization': 'Bearer ' + token
