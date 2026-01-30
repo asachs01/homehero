@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-01-30
 
 ### Added
+- **Parent notifications on task completion** (`src/routes/dashboard.js`)
+  - When a child completes a task, all parents in the household receive a notification
+  - Message format: "Emma completed 'Make Bed' ✓"
+  - Uses existing notification infrastructure (type: 'task_complete')
+- **Missed task detection with parent alerts** (`src/jobs/missedTaskChecker.js`)
+  - Daily cron job runs at 00:05 (after streak calculator)
+  - Detects incomplete routine tasks from previous day
+  - Respects routine schedules (daily/weekly)
+  - Creates notifications for all parents in household
+  - Message format: "Emma missed 2 tasks in Morning Routine yesterday"
+  - Only tracks children's missed tasks (skips parent users)
 - **Visual icon picker for task creation**
   - 57 icons organized by category (cleaning, bedroom, bathroom, kitchen, outdoor, homework, pets, misc)
   - Click-to-select icon picker modal in admin panel

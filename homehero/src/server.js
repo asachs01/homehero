@@ -14,6 +14,7 @@ const familyRoutes = require('./routes/family');
 const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
 const { startStreakCalculator } = require('./jobs/streakCalculator');
+const { startMissedTaskChecker } = require('./jobs/missedTaskChecker');
 const { getStats: getCacheStats } = require('./middleware/cache');
 const { generalLimiter, authLimiter, onboardingLimiter } = require('./middleware/rateLimit');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
@@ -154,10 +155,15 @@ async function start() {
       console.warn('Warning: Database initialization failed, starting without database');
     }
 
-    // Start the streak calculator cron job (runs daily at midnight)
+    // Start cron jobs (only if database is initialized)
     if (dbInitialized) {
+      // Streak calculator runs daily at midnight
       startStreakCalculator();
       console.log('Streak calculator job scheduled');
+
+      // Missed task checker runs daily at 00:05 (after streak calculator)
+      startMissedTaskChecker();
+      console.log('Missed task checker job scheduled');
     }
 
     app.listen(PORT, () => {
