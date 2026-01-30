@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-01-30
 
 ### Added
+- **Streak milestone display on child dashboard** (`src/public/dashboard.html`)
+  - Shows "Next Milestone" indicator below streak count
+  - Displays days remaining until next milestone reward
+  - Shows reward amount (e.g., "2 more days for $1.00 bonus!")
+  - Milestone thresholds: 7 days ($1), 14 days ($2.50), 30 days ($5), 60 days ($10), 90 days ($20)
+  - Special "All milestones reached!" message when child completes all milestones
 - **Parent notifications on task completion** (`src/routes/dashboard.js`)
   - When a child completes a task, all parents in the household receive a notification
   - Message format: "Emma completed 'Make Bed' ✓"
