@@ -9,6 +9,63 @@ const crypto = require('crypto');
 const { getDb, testConnection } = require('./pool');
 
 /**
+ * Check if a column exists in a table
+ * @param {string} table - Table name
+ * @param {string} column - Column name
+ * @returns {boolean}
+ */
+function columnExists(table, column) {
+  const db = getDb();
+  const result = db.prepare(`PRAGMA table_info(${table})`).all();
+  return result.some(col => col.name === column);
+}
+
+/**
+ * Run migrations for schema changes
+ * Handles v1.1.0 -> v1.2.0 task schema migration
+ */
+function runMigrations() {
+  const db = getDb();
+
+  // Migration: Add value_cents and category to tasks if missing (v1.2.0)
+  if (!columnExists('tasks', 'value_cents')) {
+    console.log('Database: Migrating tasks table - adding value_cents column');
+    db.prepare('ALTER TABLE tasks ADD COLUMN value_cents INTEGER DEFAULT 0').run();
+
+    // Migrate dollar_value to value_cents if old column exists
+    if (columnExists('tasks', 'dollar_value')) {
+      console.log('Database: Migrating dollar_value to value_cents');
+      db.prepare('UPDATE tasks SET value_cents = CAST(dollar_value * 100 AS INTEGER) WHERE dollar_value IS NOT NULL').run();
+    }
+  }
+
+  if (!columnExists('tasks', 'category')) {
+    console.log('Database: Migrating tasks table - adding category column');
+    db.prepare('ALTER TABLE tasks ADD COLUMN category TEXT').run();
+
+    // Migrate type to category if old column exists
+    if (columnExists('tasks', 'type')) {
+      console.log('Database: Migrating type to category');
+      db.prepare("UPDATE tasks SET category = type WHERE type IS NOT NULL").run();
+    }
+  }
+
+  // Migration: Add schedule columns to routines if missing (v1.2.0)
+  if (!columnExists('routines', 'schedule_type')) {
+    console.log('Database: Migrating routines table - adding schedule_type column');
+    db.prepare("ALTER TABLE routines ADD COLUMN schedule_type TEXT DEFAULT 'daily'").run();
+    db.prepare("UPDATE routines SET schedule_type = 'daily' WHERE schedule_type IS NULL").run();
+  }
+
+  if (!columnExists('routines', 'schedule_days')) {
+    console.log('Database: Migrating routines table - adding schedule_days column');
+    db.prepare('ALTER TABLE routines ADD COLUMN schedule_days TEXT').run();
+  }
+
+  console.log('Database: Migrations complete');
+}
+
+/**
  * Check if database tables exist
  * @returns {boolean}
  */
@@ -106,6 +163,8 @@ async function initialize() {
     // This prevents orphan households that confuse the onboarding status check
   } else {
     console.log('Database: Tables already exist');
+    // Run migrations for schema changes (v1.1.0 -> v1.2.0, etc.)
+    runMigrations();
   }
 
   console.log('Database: Initialization complete');
