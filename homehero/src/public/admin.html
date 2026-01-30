@@ -1817,6 +1817,8 @@
         document.getElementById('task-icon').value = task.icon || '';
         document.getElementById('task-value-cents').value = task.valueCents || '';
         document.getElementById('task-category').value = task.category || '';
+        // Update icon picker display
+        updateIconPickerDisplay(task.icon || '');
       } else {
         title.textContent = 'Add Task';
         document.getElementById('task-id').value = '';
@@ -1825,6 +1827,8 @@
         document.getElementById('task-icon').value = '';
         document.getElementById('task-value-cents').value = '';
         document.getElementById('task-category').value = '';
+        // Clear icon picker display
+        updateIconPickerDisplay('');
       }
 
       modal.classList.add('visible');
