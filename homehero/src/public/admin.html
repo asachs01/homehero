@@ -1593,6 +1593,42 @@
         </div>
       </div>
 
+      <!-- Payouts Tab -->
+      <div id="tab-payouts" class="tab-content">
+        <div class="section-header">
+          <h2 class="section-title">Monthly Payouts</h2>
+        </div>
+
+        <!-- Month Selector -->
+        <div class="month-selector">
+          <span class="month-selector-label">Viewing:</span>
+          <select id="payout-month" onchange="loadPayoutData()">
+            <!-- Dynamically populated -->
+          </select>
+          <select id="payout-year" onchange="loadPayoutData()">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <!-- Payouts List -->
+        <div id="payouts-list">
+          <!-- Dynamically populated -->
+        </div>
+
+        <div id="payouts-empty" class="payouts-empty" style="display: none;">
+          <div class="payouts-empty-icon">&#x1F4B0;</div>
+          <div class="payouts-empty-text">No children in household yet.<br>Add children to track their earnings.</div>
+        </div>
+
+        <!-- Previous Months -->
+        <div id="previous-months" class="previous-months" style="display: none;">
+          <h3 class="previous-months-title">Previous Months</h3>
+          <div id="previous-months-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
       <!-- Settings Tab -->
       <div id="tab-settings" class="tab-content">
         <div class="section-header">
@@ -1887,6 +1923,11 @@
     var taskIcons = [];
     var selectedTaskIcon = null;
 
+    // Payouts data
+    var payoutsData = null;
+    var monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
       var token = localStorage.getItem('token');
@@ -2009,6 +2050,9 @@
         renderTasks();
         renderRoutines();
 
+        // Initialize payouts tab
+        initPayoutsSelectors();
+
         document.getElementById('loading-screen').style.display = 'none';
         document.getElementById('admin-panel').style.display = 'block';
       } catch (err) {
@@ -2025,6 +2069,11 @@
       document.querySelectorAll('.tab-content').forEach(function(content) {
         content.classList.toggle('active', content.id === 'tab-' + tabName);
       });
+
+      // Load payout data when switching to payouts tab
+      if (tabName === 'payouts') {
+        loadPayoutData();
+      }
     }
 
     // ===================
@@ -3229,6 +3278,338 @@
       } finally {
         confirmBtn.disabled = false;
         confirmBtn.textContent = 'Mark Sick Day';
+      }
+    }
+
+    // ===================
+    // PAYOUTS
+    // ===================
+
+    function initPayoutsSelectors() {
+      var monthSelect = document.getElementById('payout-month');
+      var yearSelect = document.getElementById('payout-year');
+
+      // Clear existing options
+      while (monthSelect.firstChild) monthSelect.removeChild(monthSelect.firstChild);
+      while (yearSelect.firstChild) yearSelect.removeChild(yearSelect.firstChild);
+
+      var now = new Date();
+      var currentMonth = now.getMonth() + 1;
+      var currentYear = now.getFullYear();
+
+      // Populate months
+      for (var i = 1; i <= 12; i++) {
+        var option = document.createElement('option');
+        option.value = i;
+        option.textContent = monthNames[i];
+        if (i === currentMonth) option.selected = true;
+        monthSelect.appendChild(option);
+      }
+
+      // Populate years (current year and 2 previous)
+      for (var y = currentYear; y >= currentYear - 2; y--) {
+        var yearOption = document.createElement('option');
+        yearOption.value = y;
+        yearOption.textContent = y;
+        if (y === currentYear) yearOption.selected = true;
+        yearSelect.appendChild(yearOption);
+      }
+    }
+
+    async function loadPayoutData() {
+      var month = document.getElementById('payout-month').value;
+      var year = document.getElementById('payout-year').value;
+
+      try {
+        var token = localStorage.getItem('token');
+        var response = await fetch('./api/balance/household-payouts?month=' + month + '&year=' + year, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (response.status === 401) {
+          logout();
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error('Failed to load payout data');
+        }
+
+        payoutsData = await response.json();
+        renderPayouts();
+      } catch (err) {
+        console.error('Error loading payouts:', err);
+        alert('Failed to load payout data');
+      }
+    }
+
+    function renderPayouts() {
+      var list = document.getElementById('payouts-list');
+      var empty = document.getElementById('payouts-empty');
+      var prevMonthsSection = document.getElementById('previous-months');
+      var prevMonthsList = document.getElementById('previous-months-list');
+
+      while (list.firstChild) list.removeChild(list.firstChild);
+      while (prevMonthsList.firstChild) prevMonthsList.removeChild(prevMonthsList.firstChild);
+
+      if (!payoutsData || !payoutsData.currentMonth || payoutsData.currentMonth.children.length === 0) {
+        list.style.display = 'none';
+        empty.style.display = 'block';
+        prevMonthsSection.style.display = 'none';
+        return;
+      }
+
+      list.style.display = 'block';
+      empty.style.display = 'none';
+
+      // Render current month children
+      payoutsData.currentMonth.children.forEach(function(child) {
+        var card = createPayoutCard(child);
+        list.appendChild(card);
+      });
+
+      // Render previous months
+      if (payoutsData.previousMonths && payoutsData.previousMonths.length > 0) {
+        prevMonthsSection.style.display = 'block';
+
+        payoutsData.previousMonths.forEach(function(monthData) {
+          var monthCard = document.createElement('div');
+          monthCard.className = 'previous-month-card';
+
+          var header = document.createElement('div');
+          header.className = 'previous-month-header';
+          header.textContent = monthNames[monthData.month] + ' ' + monthData.year;
+
+          var childrenDiv = document.createElement('div');
+          childrenDiv.className = 'previous-month-children';
+
+          monthData.children.forEach(function(child) {
+            var childRow = document.createElement('div');
+            childRow.className = 'previous-month-child';
+
+            var nameSpan = document.createElement('span');
+            nameSpan.className = 'previous-month-child-name';
+            nameSpan.textContent = child.name;
+
+            var amountSpan = document.createElement('span');
+            amountSpan.className = 'previous-month-child-amount';
+            amountSpan.textContent = '$' + child.earned.toFixed(2);
+
+            childRow.appendChild(nameSpan);
+            childRow.appendChild(amountSpan);
+            childrenDiv.appendChild(childRow);
+          });
+
+          monthCard.appendChild(header);
+          monthCard.appendChild(childrenDiv);
+          prevMonthsList.appendChild(monthCard);
+        });
+      } else {
+        prevMonthsSection.style.display = 'none';
+      }
+    }
+
+    function createPayoutCard(child) {
+      var card = document.createElement('div');
+      card.className = 'payout-card';
+
+      // Header
+      var header = document.createElement('div');
+      header.className = 'payout-header';
+
+      var avatar = document.createElement('div');
+      avatar.className = 'payout-avatar';
+      if (child.avatar) {
+        avatar.style.backgroundColor = child.avatar.color || '#E0E0E0';
+        avatar.textContent = child.avatar.emoji || '\u{1F464}';
+      } else {
+        avatar.style.backgroundColor = '#E0E0E0';
+        avatar.textContent = '\u{1F464}';
+      }
+
+      var info = document.createElement('div');
+      info.className = 'payout-info';
+
+      var name = document.createElement('div');
+      name.className = 'payout-name';
+      name.textContent = child.name;
+
+      var balance = document.createElement('div');
+      balance.className = 'payout-balance';
+      balance.innerHTML = 'Current Balance: <span class="payout-balance-amount">$' +
+        child.currentBalance.toFixed(2) + '</span>';
+
+      info.appendChild(name);
+      info.appendChild(balance);
+
+      header.appendChild(avatar);
+      header.appendChild(info);
+
+      // Stats
+      var stats = document.createElement('div');
+      stats.className = 'payout-stats';
+
+      var earnedStat = createStatBox('Earned This Month', child.monthly.earned, 'earned');
+      var spentStat = createStatBox('Spent', child.monthly.spent, 'spent');
+      var netStat = createStatBox('Net', child.monthly.net, child.monthly.net >= 0 ? 'earned' : 'spent');
+
+      stats.appendChild(earnedStat);
+      stats.appendChild(spentStat);
+      stats.appendChild(netStat);
+
+      // Actions
+      var actions = document.createElement('div');
+      actions.className = 'payout-actions';
+
+      var payBtn = document.createElement('button');
+      payBtn.className = 'payout-btn primary';
+      payBtn.innerHTML = '&#x1F4B5; Mark as Paid';
+      payBtn.disabled = child.currentBalance <= 0;
+      payBtn.onclick = function() { openPayoutModal(child); };
+
+      var historyBtn = document.createElement('button');
+      historyBtn.className = 'payout-btn secondary';
+      historyBtn.innerHTML = '&#x1F4C4; View History';
+      historyBtn.onclick = function() { togglePayoutHistory(child.userId, card); };
+
+      actions.appendChild(payBtn);
+      actions.appendChild(historyBtn);
+
+      // History section (hidden by default)
+      var historySection = document.createElement('div');
+      historySection.className = 'payout-history';
+      historySection.id = 'payout-history-' + child.userId;
+      historySection.style.display = 'none';
+
+      var historyTitle = document.createElement('div');
+      historyTitle.className = 'payout-history-title';
+      historyTitle.textContent = 'Recent Payouts';
+
+      var historyList = document.createElement('div');
+      historyList.className = 'payout-history-list';
+
+      if (child.recentPayouts && child.recentPayouts.length > 0) {
+        child.recentPayouts.forEach(function(payout) {
+          var item = document.createElement('div');
+          item.className = 'payout-history-item';
+
+          var date = document.createElement('span');
+          date.className = 'payout-history-date';
+          date.textContent = formatDate(payout.createdAt);
+
+          var desc = document.createElement('span');
+          desc.className = 'payout-history-desc';
+          desc.textContent = payout.description;
+
+          var amount = document.createElement('span');
+          amount.className = 'payout-history-amount';
+          amount.textContent = '$' + Math.abs(payout.amount).toFixed(2);
+
+          item.appendChild(date);
+          item.appendChild(desc);
+          item.appendChild(amount);
+          historyList.appendChild(item);
+        });
+      } else {
+        var noHistory = document.createElement('div');
+        noHistory.style.cssText = 'color: #9E9E9E; font-size: 0.9rem; padding: 8px;';
+        noHistory.textContent = 'No payout history yet.';
+        historyList.appendChild(noHistory);
+      }
+
+      historySection.appendChild(historyTitle);
+      historySection.appendChild(historyList);
+
+      card.appendChild(header);
+      card.appendChild(stats);
+      card.appendChild(actions);
+      card.appendChild(historySection);
+
+      return card;
+    }
+
+    function createStatBox(label, value, colorClass) {
+      var stat = document.createElement('div');
+      stat.className = 'payout-stat';
+
+      var labelDiv = document.createElement('div');
+      labelDiv.className = 'payout-stat-label';
+      labelDiv.textContent = label;
+
+      var valueDiv = document.createElement('div');
+      valueDiv.className = 'payout-stat-value ' + colorClass;
+      valueDiv.textContent = '$' + Math.abs(value).toFixed(2);
+
+      stat.appendChild(labelDiv);
+      stat.appendChild(valueDiv);
+
+      return stat;
+    }
+
+    function togglePayoutHistory(userId, card) {
+      var historySection = document.getElementById('payout-history-' + userId);
+      if (historySection) {
+        historySection.style.display = historySection.style.display === 'none' ? 'block' : 'none';
+      }
+    }
+
+    function formatDate(dateString) {
+      var date = new Date(dateString);
+      var month = date.getMonth() + 1;
+      var day = date.getDate();
+      var year = date.getFullYear();
+      return month + '/' + day + '/' + year;
+    }
+
+    function openPayoutModal(child) {
+      var amount = child.currentBalance;
+      var description = 'Monthly payout - ' + monthNames[payoutsData.currentMonth.month] + ' ' + payoutsData.currentMonth.year;
+
+      if (amount <= 0) {
+        alert('No balance available for payout.');
+        return;
+      }
+
+      var confirmMessage = 'Mark $' + amount.toFixed(2) + ' as paid to ' + child.name + '?\n\n' +
+        'This will deduct the amount from their balance.';
+
+      if (confirm(confirmMessage)) {
+        processPayoutForChild(child.userId, amount, description);
+      }
+    }
+
+    async function processPayoutForChild(userId, amount, description) {
+      try {
+        var token = localStorage.getItem('token');
+        var response = await fetch('./api/balance/redeem', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: userId,
+            amount: amount,
+            description: description
+          })
+        });
+
+        if (response.status === 401) {
+          logout();
+          return;
+        }
+
+        if (!response.ok) {
+          var err = await response.json();
+          throw new Error(err.error || 'Failed to process payout');
+        }
+
+        // Reload payout data
+        await loadPayoutData();
+        alert('Payout recorded successfully!');
+      } catch (err) {
+        console.error('Error processing payout:', err);
+        alert('Failed to process payout: ' + err.message);
       }
     }
 

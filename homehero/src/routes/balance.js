@@ -7,6 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const Balance = require('../models/Balance');
+const User = require('../models/User');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const {
   validateRedemption,
@@ -213,6 +214,103 @@ router.get('/api/balance/summary', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Error fetching summary:', err);
     res.status(500).json({ error: 'Failed to fetch summary' });
+  }
+});
+
+/**
+ * GET /api/balance/household-payouts
+ * Get monthly payout summary for all children in household (admin only)
+ * Query params: month (1-12), year (YYYY)
+ * Returns current month and previous months' data
+ */
+router.get('/api/balance/household-payouts', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const now = new Date();
+    const month = req.query.month ? parseInt(req.query.month) : now.getMonth() + 1;
+    const year = req.query.year ? parseInt(req.query.year) : now.getFullYear();
+
+    // Validate month and year
+    if (month < 1 || month > 12) {
+      return res.status(400).json({ error: 'Month must be between 1 and 12' });
+    }
+    if (year < 2000 || year > 2100) {
+      return res.status(400).json({ error: 'Invalid year' });
+    }
+
+    // Get all users in household
+    const users = await User.findByHousehold(req.user.householdId);
+    const children = users.filter(u => u.role === 'child');
+
+    // Get monthly summary and current balance for each child
+    const childSummaries = await Promise.all(children.map(async (child) => {
+      const monthlySummary = await Balance.getMonthlyTotal(child.id, month, year);
+      const currentBalance = await Balance.get(child.id);
+
+      // Get recent payout transactions for this child
+      const payoutTransactions = await Balance.getTransactions(child.id, {
+        type: 'payout',
+        limit: 10
+      });
+
+      return {
+        userId: child.id,
+        name: child.name,
+        avatar: child.avatar,
+        currentBalance: currentBalance.currentBalance,
+        monthly: {
+          earned: monthlySummary.earned,
+          spent: monthlySummary.spent,
+          adjustments: monthlySummary.adjustments,
+          net: monthlySummary.net
+        },
+        recentPayouts: payoutTransactions.transactions
+      };
+    }));
+
+    // Get previous months data (last 6 months)
+    const previousMonths = [];
+    for (let i = 1; i <= 6; i++) {
+      let prevMonth = month - i;
+      let prevYear = year;
+      if (prevMonth < 1) {
+        prevMonth += 12;
+        prevYear -= 1;
+      }
+
+      const monthData = await Promise.all(children.map(async (child) => {
+        const summary = await Balance.getMonthlyTotal(child.id, prevMonth, prevYear);
+        return {
+          userId: child.id,
+          name: child.name,
+          earned: summary.earned,
+          net: summary.net
+        };
+      }));
+
+      // Only include months that have data
+      const hasData = monthData.some(m => m.earned > 0 || m.net !== 0);
+      if (hasData) {
+        previousMonths.push({
+          month: prevMonth,
+          year: prevYear,
+          children: monthData
+        });
+      }
+    }
+
+    res.json({
+      currentMonth: {
+        month,
+        year,
+        children: childSummaries
+      },
+      previousMonths,
+      monthNames: ['', 'January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December']
+    });
+  } catch (err) {
+    console.error('Error fetching household payouts:', err);
+    res.status(500).json({ error: 'Failed to fetch household payouts' });
   }
 });
 

@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-01-30
 
 ### Added
+- **Monthly payout summary view for parents** (`src/public/admin.html`, `src/routes/balance.js`)
+  - New "Payouts" tab in admin panel for managing children's earnings
+  - Displays each child's current balance, monthly earnings, and spending
+  - Month/year selector to view historical earnings data
+  - "Mark as Paid" button to record payouts (deducts from balance)
+  - Shows recent payout history for each child with expandable list
+  - Previous months section showing earnings totals for last 6 months
+  - New API endpoint `GET /api/balance/household-payouts` for household-wide payout data
 - **Sick day button for parents** (`src/public/admin.html`)
   - Parents can mark a child as having a sick day from the Users tab
   - Sick day completes all remaining tasks for the day without earning money
