@@ -1225,8 +1225,8 @@
 
       var value = document.createElement('div');
       value.className = 'task-value';
-      if (task.dollarValue > 0) {
-        value.textContent = '$' + task.dollarValue.toFixed(2);
+      if (task.valueCents > 0) {
+        value.textContent = '$' + (task.valueCents / 100).toFixed(2);
       }
 
       var status = document.createElement('div');

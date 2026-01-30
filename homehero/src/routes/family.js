@@ -12,8 +12,26 @@ const Household = require('../models/Household');
 const Routine = require('../models/Routine');
 const Completion = require('../models/Completion');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { isScheduledForDate } = require('../utils/schedule');
 const { cacheFamilyDashboard, invalidateHousehold } = require('../middleware/cache');
+
+/**
+ * Check if a routine is scheduled for a given date
+ * @param {Object} routine - Routine object with scheduleType and scheduleDays
+ * @param {Date} date - The date to check
+ * @returns {boolean} True if routine is scheduled for the date
+ */
+function isRoutineScheduledForDate(routine, date) {
+  if (routine.scheduleType === 'daily') {
+    return true;
+  }
+
+  if (routine.scheduleType === 'weekly' && routine.scheduleDays) {
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+    return routine.scheduleDays.includes(dayOfWeek);
+  }
+
+  return false;
+}
 
 /**
  * GET /api/family/dashboard
@@ -54,21 +72,21 @@ router.get('/api/family/dashboard', requireAuth, requireAdmin, cacheFamilyDashbo
       let primaryRoutineId = null;
 
       for (const routine of routines) {
+        // Check if routine is scheduled for today
+        if (!isRoutineScheduledForDate(routine, today)) {
+          continue;
+        }
+
         if (!primaryRoutineId) {
           primaryRoutineId = routine.id;
         }
 
         for (const task of routine.tasks) {
-          // Check if task is scheduled for today
-          if (!isScheduledForDate(task, today)) {
-            continue;
-          }
-
           routineTasks.push({
             id: task.id,
             name: task.name,
             icon: task.icon,
-            dollarValue: task.dollarValue,
+            valueCents: task.valueCents,
             isCompleted: completedTaskIds.has(task.id),
             routineName: routine.name
           });
@@ -213,12 +231,12 @@ router.post('/api/family/sick-day/:userId', requireAuth, requireAdmin, async (re
     const db = getDb();
 
     for (const routine of routines) {
-      for (const task of routine.tasks) {
-        // Check if task is scheduled for today
-        if (!isScheduledForDate(task, today)) {
-          continue;
-        }
+      // Check if routine is scheduled for today
+      if (!isRoutineScheduledForDate(routine, today)) {
+        continue;
+      }
 
+      for (const task of routine.tasks) {
         // Skip if already completed
         if (completedTaskIds.has(task.id)) {
           continue;
@@ -287,32 +305,34 @@ router.get('/api/family/member/:userId', requireAuth, requireAdmin, async (req, 
     const routineData = [];
 
     for (const routine of routines) {
+      // Check if routine is scheduled for today
+      if (!isRoutineScheduledForDate(routine, today)) {
+        continue;
+      }
+
       const tasks = [];
 
       for (const task of routine.tasks) {
-        // Check if task is scheduled for today
-        const scheduledToday = isScheduledForDate(task, today);
+        const completion = completions.find(c => c.taskId === task.id);
 
-        if (scheduledToday) {
-          const completion = completions.find(c => c.taskId === task.id);
-
-          tasks.push({
-            id: task.id,
-            name: task.name,
-            description: task.description,
-            icon: task.icon,
-            dollarValue: task.dollarValue,
-            position: task.position,
-            isCompleted: completedTaskIds.has(task.id),
-            completedAt: completion?.completedAt || null
-          });
-        }
+        tasks.push({
+          id: task.id,
+          name: task.name,
+          description: task.description,
+          icon: task.icon,
+          valueCents: task.valueCents,
+          sortOrder: task.sortOrder,
+          isCompleted: completedTaskIds.has(task.id),
+          completedAt: completion?.completedAt || null
+        });
       }
 
       if (tasks.length > 0) {
         routineData.push({
           id: routine.id,
           name: routine.name,
+          scheduleType: routine.scheduleType,
+          scheduleDays: routine.scheduleDays,
           tasks
         });
       }

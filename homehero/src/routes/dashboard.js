@@ -10,8 +10,26 @@ const Routine = require('../models/Routine');
 const Task = require('../models/Task');
 const Completion = require('../models/Completion');
 const { requireAuth } = require('../middleware/auth');
-const { isScheduledForDate } = require('../utils/schedule');
 const { cacheDashboard, invalidateUser } = require('../middleware/cache');
+
+/**
+ * Check if a routine is scheduled for a given date
+ * @param {Object} routine - Routine object with scheduleType and scheduleDays
+ * @param {Date} date - The date to check
+ * @returns {boolean} True if routine is scheduled for the date
+ */
+function isRoutineScheduledForDate(routine, date) {
+  if (routine.scheduleType === 'daily') {
+    return true;
+  }
+
+  if (routine.scheduleType === 'weekly' && routine.scheduleDays) {
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+    return routine.scheduleDays.includes(dayOfWeek);
+  }
+
+  return false;
+}
 
 /**
  * GET /api/dashboard
@@ -43,16 +61,16 @@ router.get('/api/dashboard', requireAuth, cacheDashboard, async (req, res) => {
     let primaryRoutineId = null;
 
     for (const routine of routines) {
+      // Check if routine is scheduled for today
+      if (!isRoutineScheduledForDate(routine, today)) {
+        continue;
+      }
+
       if (!primaryRoutineId) {
         primaryRoutineId = routine.id;
       }
 
       for (const task of routine.tasks) {
-        // Check if task is scheduled for today
-        if (!isScheduledForDate(task, today)) {
-          continue;
-        }
-
         const completion = completions.find(c => c.taskId === task.id);
         const isCompleted = completedTaskIds.has(task.id);
 
@@ -61,8 +79,8 @@ router.get('/api/dashboard', requireAuth, cacheDashboard, async (req, res) => {
           name: task.name,
           description: task.description,
           icon: task.icon,
-          dollarValue: task.dollarValue,
-          position: task.position,
+          valueCents: task.valueCents,
+          sortOrder: task.sortOrder,
           routineId: routine.id,
           routineName: routine.name,
           isCompleted,
@@ -73,10 +91,10 @@ router.get('/api/dashboard', requireAuth, cacheDashboard, async (req, res) => {
       }
     }
 
-    // Sort by position
-    routineTasks.sort((a, b) => a.position - b.position);
+    // Sort by sortOrder
+    routineTasks.sort((a, b) => a.sortOrder - b.sortOrder);
 
-    // Get bonus tasks (type='one-time' or unassigned tasks available for claim)
+    // Get bonus tasks (tasks not in any routine, available for claim)
     const bonusTasks = getBonusTasks(householdId, userId, today, completedTaskIds, completions);
 
     // Get streak data
@@ -178,7 +196,7 @@ router.post('/api/dashboard/complete/:taskId', requireAuth, async (req, res) => 
       task: {
         id: task.id,
         name: task.name,
-        dollarValue: task.dollarValue
+        valueCents: task.valueCents
       },
       balance: {
         current: balance,
@@ -239,6 +257,7 @@ router.post('/api/dashboard/undo/:completionId', requireAuth, async (req, res) =
 
 /**
  * Get bonus tasks available for the user
+ * These are tasks that exist but are not part of any routine
  * @param {string} householdId - Household UUID
  * @param {string} userId - User UUID
  * @param {Date} date - The date to check
@@ -248,35 +267,21 @@ router.post('/api/dashboard/undo/:completionId', requireAuth, async (req, res) =
  */
 function getBonusTasks(householdId, userId, date, completedTaskIds, completions) {
   const db = getDb();
-  // Get all one-time tasks for the household that are scheduled for today
+  // Get all tasks for the household that are NOT part of any routine
   const rows = db.prepare(
-    `SELECT *
-     FROM tasks
-     WHERE household_id = ?
-     AND type = 'one-time'
-     ORDER BY dollar_value DESC, name ASC`
+    `SELECT t.*
+     FROM tasks t
+     WHERE t.household_id = ?
+     AND NOT EXISTS (
+       SELECT 1 FROM routine_tasks rt WHERE rt.task_id = t.id
+     )
+     ORDER BY t.value_cents DESC, t.name ASC`
   ).all(householdId);
 
   const bonusTasks = [];
 
   for (const row of rows) {
-    const task = Task.formatTask ? Task.formatTask(row) : {
-      id: row.id,
-      householdId: row.household_id,
-      name: row.name,
-      description: row.description,
-      icon: row.icon,
-      type: row.type,
-      dollarValue: parseFloat(row.dollar_value) || 0,
-      schedule: typeof row.schedule === 'string' ? JSON.parse(row.schedule || '[]') : (row.schedule || []),
-      timeWindow: typeof row.time_window === 'string' ? JSON.parse(row.time_window || 'null') : row.time_window,
-      createdAt: row.created_at
-    };
-
-    // Check if scheduled for today
-    if (!isScheduledForDate(task, date)) {
-      continue;
-    }
+    const task = Task.formatTask(row);
 
     // Check if already claimed/completed by anyone today
     const taskCompletions = Completion.findByTaskAndDate(task.id, date);
@@ -291,7 +296,8 @@ function getBonusTasks(householdId, userId, date, completedTaskIds, completions)
       name: task.name,
       description: task.description,
       icon: task.icon,
-      dollarValue: task.dollarValue,
+      valueCents: task.valueCents,
+      category: task.category,
       isCompleted,
       isClaimed: alreadyClaimed,
       claimedBy: taskCompletions[0]?.userName || null,

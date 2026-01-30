@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-01-29
+
+### Changed
+- **Database schema refactor for tasks and routines**
+  - Tasks table simplified: removed `type`, `schedule`, `time_window` columns; added `value_cents` (integer) and `category` columns
+  - Routines table enhanced: added `schedule_type` (daily/weekly) and `schedule_days` (JSON array) for scheduling
+  - Routine tasks table: added `id` column, renamed `position` to `sort_order`
+  - Task model updated to use `valueCents` instead of `dollarValue`
+  - Routine model updated to support schedule configuration
+  - All related routes, validators, and models updated to use new schema
+- Scheduling logic moved from tasks to routines for cleaner architecture
+
 ## [1.1.0] - 2026-01-29
 
 ### Changed
@@ -17,6 +29,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove explicit ENTRYPOINT from Dockerfile
 
 ### Added
+- Task/chore icon library with 57 emoji icons organized by category
+  - New data file `src/data/task-icons.json` with icons for:
+    - cleaning: broom, mop, vacuum, sponge, spray bottle, trash, soap, sparkles
+    - bedroom: bed, clothes, closet, hanger, lamp
+    - bathroom: toilet, shower, toothbrush, bathtub, towel, mirror
+    - kitchen: dishes, cooking, trash, refrigerator, groceries, utensils, countertop
+    - outdoor: lawn, garden, car, leaves, snow, watering, bicycle
+    - homework: books, pencil, computer, backpack, notebook, reading
+    - pets: dog bowl, cat food, fish, pet walk, bird, hamster
+    - misc: laundry, mail, recycling, keys, phone, calendar, clock, money, gift, star, heart, check
+  - Each icon includes: id, name, emoji, category, color
+  - New API endpoint `GET /api/task-icons` returns all icons
+  - Optional category filter: `GET /api/task-icons?category=cleaning`
+  - New API endpoint `GET /api/task-icons/categories` returns list of categories
 - Added build.yaml for Home Assistant local add-on builds
 - Added icon.svg, icon.png, and logo.png for add-on branding
 - Performance optimizations for improved response times and reduced database load

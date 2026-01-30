@@ -2,19 +2,39 @@
  * Task validation utilities
  */
 
-// Valid task types - must match database schema CHECK constraint
-const VALID_TYPES = ['daily', 'weekly', 'one-time'];
-const VALID_DAYS = [0, 1, 2, 3, 4, 5, 6];
+const taskIcons = require('../data/task-icons.json');
+
+// Create a set of valid icon IDs for quick lookup
+const validIconIds = new Set(taskIcons.map(icon => icon.id));
+
+/**
+ * Check if an icon ID is valid
+ * @param {string} iconId - The icon ID to validate
+ * @returns {boolean} True if valid, false otherwise
+ */
+function isValidIcon(iconId) {
+  return validIconIds.has(iconId);
+}
+
+/**
+ * Get icon data by ID
+ * @param {string} iconId - The icon ID
+ * @returns {Object|null} The icon data or null if not found
+ */
+function getIconData(iconId) {
+  if (!iconId) return null;
+  return taskIcons.find(icon => icon.id === iconId) || null;
+}
 
 /**
  * Validate task creation/update data
  *
  * Rules:
  * - name: required, 1-255 chars
- * - type: required, enum ['routine', 'bonus']
- * - dollarValue: required if bonus, >= 0
- * - schedule: array of integers 0-6
+ * - valueCents: optional, integer >= 0
+ * - category: optional, string
  * - assignedUsers: array of valid user IDs (UUIDs)
+ * - icon: optional, must be valid icon ID from task-icons.json
  *
  * @param {Object} data - The task data to validate
  * @param {boolean} isUpdate - Whether this is an update (makes fields optional)
@@ -36,41 +56,22 @@ function validateTask(data, isUpdate = false) {
     }
   }
 
-  // Type validation
-  if (!isUpdate || data.type !== undefined) {
-    if (!data.type && !isUpdate) {
-      errors.push('type is required');
-    } else if (data.type !== undefined) {
-      if (!VALID_TYPES.includes(data.type)) {
-        errors.push(`type must be one of: ${VALID_TYPES.join(', ')}`);
-      }
-    }
-  }
-
-  // Dollar value validation
-  if (data.dollarValue !== undefined) {
-    const value = parseFloat(data.dollarValue);
+  // Value cents validation (optional)
+  if (data.valueCents !== undefined) {
+    const value = parseInt(data.valueCents, 10);
     if (isNaN(value)) {
-      errors.push('dollarValue must be a number');
+      errors.push('valueCents must be an integer');
     } else if (value < 0) {
-      errors.push('dollarValue must be >= 0');
+      errors.push('valueCents must be >= 0');
     }
   }
 
-  // Dollar value required for bonus tasks
-  if (data.type === 'bonus' && (data.dollarValue === undefined || data.dollarValue === null)) {
-    errors.push('dollarValue is required for bonus tasks');
-  }
-
-  // Schedule validation
-  if (data.schedule !== undefined) {
-    if (!Array.isArray(data.schedule)) {
-      errors.push('schedule must be an array');
-    } else {
-      const invalidDays = data.schedule.filter(day => !VALID_DAYS.includes(day));
-      if (invalidDays.length > 0) {
-        errors.push('schedule must contain only integers 0-6 (0=Sunday, 6=Saturday)');
-      }
+  // Category validation (optional)
+  if (data.category !== undefined && data.category !== null) {
+    if (typeof data.category !== 'string') {
+      errors.push('category must be a string');
+    } else if (data.category.length > 100) {
+      errors.push('category must be at most 100 characters');
     }
   }
 
@@ -94,12 +95,12 @@ function validateTask(data, isUpdate = false) {
     }
   }
 
-  // Icon validation (optional)
+  // Icon validation (optional but must be valid if provided)
   if (data.icon !== undefined && data.icon !== null) {
     if (typeof data.icon !== 'string') {
       errors.push('icon must be a string');
-    } else if (data.icon.length > 100) {
-      errors.push('icon must be at most 100 characters');
+    } else if (!isValidIcon(data.icon)) {
+      errors.push(`icon '${data.icon}' is not a valid icon ID`);
     }
   }
 
@@ -111,6 +112,6 @@ function validateTask(data, isUpdate = false) {
 
 module.exports = {
   validateTask,
-  VALID_TYPES,
-  VALID_DAYS
+  isValidIcon,
+  getIconData
 };

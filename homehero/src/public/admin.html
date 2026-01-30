@@ -1063,14 +1063,6 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="task-type">Type *</label>
-          <select id="task-type" class="form-select" required onchange="toggleDollarValue()">
-            <option value="routine">Routine (daily/scheduled)</option>
-            <option value="bonus">Bonus (extra tasks)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
           <label class="form-label" for="task-description">Description</label>
           <input type="text" id="task-description" class="form-input" placeholder="Optional description">
         </div>
@@ -1080,23 +1072,15 @@
           <input type="text" id="task-icon" class="form-input" placeholder="Emoji or text icon" maxlength="10">
         </div>
 
-        <div class="form-group" id="dollar-value-group">
-          <label class="form-label" for="task-dollar-value">Dollar Value</label>
-          <input type="number" id="task-dollar-value" class="form-input" step="0.01" min="0" placeholder="0.00">
-          <div class="form-hint">Required for bonus tasks</div>
+        <div class="form-group">
+          <label class="form-label" for="task-value-cents">Value (cents)</label>
+          <input type="number" id="task-value-cents" class="form-input" min="0" placeholder="100 = $1.00">
+          <div class="form-hint">Amount earned when task is completed (in cents)</div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Schedule (days active)</label>
-          <div class="checkbox-group" id="schedule-days">
-            <label class="checkbox-item" data-day="0"><input type="checkbox" value="0"><span>Sun</span></label>
-            <label class="checkbox-item" data-day="1"><input type="checkbox" value="1"><span>Mon</span></label>
-            <label class="checkbox-item" data-day="2"><input type="checkbox" value="2"><span>Tue</span></label>
-            <label class="checkbox-item" data-day="3"><input type="checkbox" value="3"><span>Wed</span></label>
-            <label class="checkbox-item" data-day="4"><input type="checkbox" value="4"><span>Thu</span></label>
-            <label class="checkbox-item" data-day="5"><input type="checkbox" value="5"><span>Fri</span></label>
-            <label class="checkbox-item" data-day="6"><input type="checkbox" value="6"><span>Sat</span></label>
-          </div>
+          <label class="form-label" for="task-category">Category</label>
+          <input type="text" id="task-category" class="form-input" placeholder="e.g., cleaning, homework" maxlength="100">
         </div>
 
         <div class="form-group">
@@ -1560,23 +1544,17 @@
         var meta = document.createElement('div');
         meta.className = 'item-meta';
 
-        var typeBadge = document.createElement('span');
-        typeBadge.className = 'item-badge ' + task.type + '-type';
-        typeBadge.textContent = task.type;
-        meta.appendChild(typeBadge);
-
-        if (task.dollarValue > 0) {
-          var valueBadge = document.createElement('span');
-          valueBadge.textContent = '$' + task.dollarValue.toFixed(2);
-          meta.appendChild(valueBadge);
+        if (task.category) {
+          var categoryBadge = document.createElement('span');
+          categoryBadge.className = 'item-badge';
+          categoryBadge.textContent = task.category;
+          meta.appendChild(categoryBadge);
         }
 
-        if (task.schedule && task.schedule.length > 0) {
-          var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          var scheduleText = task.schedule.map(function(d) { return days[d]; }).join(', ');
-          var scheduleSpan = document.createElement('span');
-          scheduleSpan.textContent = scheduleText;
-          meta.appendChild(scheduleSpan);
+        if (task.valueCents > 0) {
+          var valueBadge = document.createElement('span');
+          valueBadge.textContent = '$' + (task.valueCents / 100).toFixed(2);
+          meta.appendChild(valueBadge);
         }
 
         info.appendChild(name);
@@ -1664,35 +1642,20 @@
         title.textContent = 'Edit Task';
         document.getElementById('task-id').value = task.id;
         document.getElementById('task-name').value = task.name;
-        document.getElementById('task-type').value = task.type;
         document.getElementById('task-description').value = task.description || '';
         document.getElementById('task-icon').value = task.icon || '';
-        document.getElementById('task-dollar-value').value = task.dollarValue || '';
-
-        // Set schedule
-        document.querySelectorAll('#schedule-days .checkbox-item').forEach(function(item) {
-          var checkbox = item.querySelector('input');
-          var day = parseInt(checkbox.value);
-          checkbox.checked = task.schedule && task.schedule.includes(day);
-          item.classList.toggle('checked', checkbox.checked);
-        });
+        document.getElementById('task-value-cents').value = task.valueCents || '';
+        document.getElementById('task-category').value = task.category || '';
       } else {
         title.textContent = 'Add Task';
         document.getElementById('task-id').value = '';
         document.getElementById('task-name').value = '';
-        document.getElementById('task-type').value = 'routine';
         document.getElementById('task-description').value = '';
         document.getElementById('task-icon').value = '';
-        document.getElementById('task-dollar-value').value = '';
-
-        document.querySelectorAll('#schedule-days .checkbox-item').forEach(function(item) {
-          var checkbox = item.querySelector('input');
-          checkbox.checked = false;
-          item.classList.remove('checked');
-        });
+        document.getElementById('task-value-cents').value = '';
+        document.getElementById('task-category').value = '';
       }
 
-      toggleDollarValue();
       modal.classList.add('visible');
     }
 
@@ -1700,32 +1663,15 @@
       document.getElementById('task-modal').classList.remove('visible');
     }
 
-    function toggleDollarValue() {
-      var type = document.getElementById('task-type').value;
-      var group = document.getElementById('dollar-value-group');
-      var input = document.getElementById('task-dollar-value');
-
-      if (type === 'bonus') {
-        input.required = true;
-      } else {
-        input.required = false;
-      }
-    }
-
     async function saveTask(e) {
       e.preventDefault();
 
       var id = document.getElementById('task-id').value;
       var name = document.getElementById('task-name').value.trim();
-      var type = document.getElementById('task-type').value;
       var description = document.getElementById('task-description').value.trim();
       var taskIcon = document.getElementById('task-icon').value.trim();
-      var dollarValue = document.getElementById('task-dollar-value').value;
-
-      var schedule = [];
-      document.querySelectorAll('#schedule-days input:checked').forEach(function(cb) {
-        schedule.push(parseInt(cb.value));
-      });
+      var valueCents = document.getElementById('task-value-cents').value;
+      var category = document.getElementById('task-category').value.trim();
 
       var assignedUsers = [];
       document.querySelectorAll('#task-user-select input:checked').forEach(function(cb) {
@@ -1734,14 +1680,13 @@
 
       var body = {
         name: name,
-        type: type,
-        schedule: schedule,
         assignedUsers: assignedUsers
       };
 
       if (description) body.description = description;
       if (taskIcon) body.icon = taskIcon;
-      if (dollarValue) body.dollarValue = parseFloat(dollarValue);
+      if (valueCents) body.valueCents = parseInt(valueCents);
+      if (category) body.category = category;
 
       try {
         var token = localStorage.getItem('token');

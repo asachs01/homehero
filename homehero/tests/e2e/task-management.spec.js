@@ -44,23 +44,15 @@ test.describe('Task Management API', () => {
     await api.dispose();
   });
 
-  test('should create a daily task', async () => {
-    const taskData = generateTask('Daily');
+  test('should create a task', async () => {
+    const taskData = generateTask('Test');
 
     const task = await api.createTask(taskData);
 
     expect(task).toHaveProperty('id');
     expect(task.name).toBe(taskData.name);
-    expect(task.type).toBe('daily');
-    expect(task.dollarValue).toBe(taskData.dollarValue);
-  });
-
-  test('should create a one-time task', async () => {
-    const taskData = generateTask('OneTime', 'one-time');
-
-    const task = await api.createTask(taskData);
-
-    expect(task.type).toBe('one-time');
+    expect(task.valueCents).toBe(taskData.valueCents);
+    expect(task.category).toBe(taskData.category);
   });
 
   test('should list tasks for household', async () => {
@@ -90,14 +82,14 @@ test.describe('Task Management API', () => {
     // Update the task
     const response = await api.put(`/api/tasks/${createdTask.id}`, {
       name: 'Updated Task Name',
-      dollarValue: 2.50
+      valueCents: 250
     });
 
     expect(response.ok()).toBeTruthy();
 
     const updatedTask = await response.json();
     expect(updatedTask.name).toBe('Updated Task Name');
-    expect(updatedTask.dollarValue).toBe(2.50);
+    expect(updatedTask.valueCents).toBe(250);
   });
 
   test('should delete a task', async () => {
@@ -137,14 +129,14 @@ test.describe('Task Management API', () => {
   test('should validate task data', async () => {
     // Missing name
     const response1 = await api.post('/api/tasks', {
-      type: 'daily'
+      valueCents: 100
     });
     expect(response1.status()).toBe(400);
 
-    // Invalid type
+    // Invalid valueCents (negative)
     const response2 = await api.post('/api/tasks', {
       name: 'Test Task',
-      type: 'invalid-type'
+      valueCents: -100
     });
     expect(response2.status()).toBe(400);
   });

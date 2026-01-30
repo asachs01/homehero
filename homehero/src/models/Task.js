@@ -4,7 +4,6 @@
 
 const crypto = require('crypto');
 const { getDb } = require('../db/pool');
-const { isScheduledForDate } = require('../utils/schedule');
 
 class Task {
   /**
@@ -18,10 +17,8 @@ class Task {
       name,
       description = null,
       icon = null,
-      type,
-      dollarValue = 0,
-      schedule = null,
-      timeWindow = null,
+      valueCents = 0,
+      category = null,
       assignedUsers = []
     } = data;
 
@@ -30,9 +27,9 @@ class Task {
     const now = new Date().toISOString();
 
     db.prepare(
-      `INSERT INTO tasks (id, household_id, name, description, icon, type, dollar_value, schedule, time_window, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(id, householdId, name, description, icon, type, dollarValue, JSON.stringify(schedule), JSON.stringify(timeWindow), now);
+      `INSERT INTO tasks (id, household_id, name, description, icon, value_cents, category, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, householdId, name, description, icon, valueCents, category, now);
 
     const row = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
     const task = Task.formatTask(row);
@@ -51,7 +48,7 @@ class Task {
   /**
    * Find all tasks for a household with optional filters
    * @param {string} householdId - The household UUID
-   * @param {Object} filters - Optional filters { type, userId }
+   * @param {Object} filters - Optional filters { category, userId }
    * @returns {Object[]} Array of tasks
    */
   static findAll(householdId, filters = {}) {
@@ -64,9 +61,9 @@ class Task {
     `;
     const params = [householdId];
 
-    if (filters.type) {
-      sql += ' AND t.type = ?';
-      params.push(filters.type);
+    if (filters.category) {
+      sql += ' AND t.category = ?';
+      params.push(filters.category);
     }
 
     if (filters.userId) {
@@ -122,21 +119,14 @@ class Task {
       name: 'name',
       description: 'description',
       icon: 'icon',
-      type: 'type',
-      dollarValue: 'dollar_value',
-      schedule: 'schedule',
-      timeWindow: 'time_window'
+      valueCents: 'value_cents',
+      category: 'category'
     };
 
     for (const [key, column] of Object.entries(fieldMap)) {
       if (data[key] !== undefined) {
-        let value = data[key];
-        // JSON stringify schedule and timeWindow
-        if (key === 'schedule' || key === 'timeWindow') {
-          value = JSON.stringify(value);
-        }
         updates.push(`${column} = ?`);
-        params.push(value);
+        params.push(data[key]);
       }
     }
 
@@ -222,12 +212,11 @@ class Task {
   }
 
   /**
-   * Get tasks assigned to a user for a specific date
+   * Get tasks assigned to a user
    * @param {string} userId - The user UUID
-   * @param {Date|string} date - The date to check (defaults to today)
-   * @returns {Object[]} Array of tasks scheduled for the date
+   * @returns {Object[]} Array of tasks assigned to the user
    */
-  static getTasksForUser(userId, date = new Date()) {
+  static getTasksForUser(userId) {
     const db = getDb();
     const rows = db.prepare(
       `SELECT t.*
@@ -237,10 +226,7 @@ class Task {
        ORDER BY t.created_at DESC`
     ).all(userId);
 
-    // Filter tasks by schedule
-    const tasks = rows
-      .map(row => Task.formatTask(row))
-      .filter(task => isScheduledForDate(task, date));
+    const tasks = rows.map(row => Task.formatTask(row));
 
     // Fetch assigned users for each task
     for (const task of tasks) {
@@ -267,35 +253,14 @@ class Task {
    * @returns {Object} Formatted task object
    */
   static formatTask(row) {
-    let schedule = row.schedule;
-    let timeWindow = row.time_window;
-
-    // Parse JSON if stored as string
-    if (typeof schedule === 'string') {
-      try {
-        schedule = JSON.parse(schedule);
-      } catch (e) {
-        schedule = [];
-      }
-    }
-    if (typeof timeWindow === 'string') {
-      try {
-        timeWindow = JSON.parse(timeWindow);
-      } catch (e) {
-        timeWindow = null;
-      }
-    }
-
     return {
       id: row.id,
       householdId: row.household_id,
       name: row.name,
       description: row.description,
       icon: row.icon,
-      type: row.type,
-      dollarValue: parseFloat(row.dollar_value) || 0,
-      schedule: schedule || [],
-      timeWindow: timeWindow,
+      valueCents: row.value_cents || 0,
+      category: row.category,
       createdAt: row.created_at
     };
   }

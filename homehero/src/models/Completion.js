@@ -55,12 +55,13 @@ class Completion {
     try {
       const db = getDb();
       // Get task name
-      const taskRow = db.prepare('SELECT name, dollar_value FROM tasks WHERE id = ?').get(taskId);
+      const taskRow = db.prepare('SELECT name, value_cents FROM tasks WHERE id = ?').get(taskId);
 
       if (!taskRow) return;
 
       const taskName = taskRow.name;
-      const dollarValue = parseFloat(taskRow.dollar_value) || 0;
+      const valueCents = taskRow.value_cents || 0;
+      const dollarValue = valueCents / 100;
 
       let message = `You completed "${taskName}"!`;
       if (dollarValue > 0) {
@@ -83,12 +84,13 @@ class Completion {
    */
   static updateBalance(taskId, userId) {
     const db = getDb();
-    // Get task dollar value
-    const taskRow = db.prepare('SELECT dollar_value, name FROM tasks WHERE id = ?').get(taskId);
+    // Get task value in cents
+    const taskRow = db.prepare('SELECT value_cents, name FROM tasks WHERE id = ?').get(taskId);
 
     if (!taskRow) return null;
 
-    const dollarValue = parseFloat(taskRow.dollar_value) || 0;
+    const valueCents = taskRow.value_cents || 0;
+    const dollarValue = valueCents / 100;
     const taskName = taskRow.name;
 
     if (dollarValue <= 0) return null;
@@ -199,11 +201,12 @@ class Completion {
     }
 
     const db = getDb();
-    // Get task dollar value to reverse
-    const taskRow = db.prepare('SELECT dollar_value, name FROM tasks WHERE id = ?').get(completion.taskId);
+    // Get task value in cents to reverse
+    const taskRow = db.prepare('SELECT value_cents, name FROM tasks WHERE id = ?').get(completion.taskId);
 
     if (taskRow) {
-      const dollarValue = parseFloat(taskRow.dollar_value) || 0;
+      const valueCents = taskRow.value_cents || 0;
+      const dollarValue = valueCents / 100;
       const taskName = taskRow.name;
 
       if (dollarValue > 0) {

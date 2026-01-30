@@ -45,21 +45,20 @@ test.describe('Routine Completion Flow', () => {
     // Create tasks
     task1 = await api.createTask({
       name: 'Brush Teeth',
-      type: 'daily',
-      dollarValue: 0.50,
-      schedule: [0, 1, 2, 3, 4, 5, 6]  // Every day (0=Sunday, 6=Saturday)
+      valueCents: 50,
+      category: 'hygiene'
     });
 
     task2 = await api.createTask({
       name: 'Make Bed',
-      type: 'daily',
-      dollarValue: 0.25,
-      schedule: [0, 1, 2, 3, 4, 5, 6]  // Every day
+      valueCents: 25,
+      category: 'bedroom'
     });
 
     // Create routine and add tasks
     routine = await api.createRoutine({
       name: 'Morning Routine',
+      scheduleType: 'daily',
       assignedUserId: childUser.id
     });
 
@@ -300,14 +299,14 @@ test.describe('Full User Flow E2E', () => {
 
     const morningTask = await api.createTask({
       name: 'Morning Task',
-      type: 'daily',
-      dollarValue: 1.00,
-      schedule: [0, 1, 2, 3, 4, 5, 6]  // Every day
+      valueCents: 100,
+      category: 'morning'
     });
 
     // Step 5: Parent creates routine and assigns to child
     const routine = await api.createRoutine({
       name: 'Daily Routine',
+      scheduleType: 'daily',
       assignedUserId: child.id
     });
 

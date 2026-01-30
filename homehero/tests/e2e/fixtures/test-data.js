@@ -40,26 +40,27 @@ function generateChild(suffix = '') {
 
 /**
  * Generate test task data
- * Valid types: 'daily', 'weekly', 'one-time' (must match db schema)
- * Schedule: array of integers 0-6 (0=Sunday, 6=Saturday)
  */
-function generateTask(suffix = '', type = 'daily') {
+function generateTask(suffix = '') {
   return {
     name: `Test Task ${suffix || testId()}`,
-    type,
     description: 'Test task description',
     icon: 'star',
-    dollarValue: 1.50,
-    schedule: type !== 'one-time' ? [1, 2, 3, 4, 5] : []  // Mon-Fri
+    valueCents: 150,
+    category: 'chores'
   };
 }
 
 /**
  * Generate test routine data
+ * Valid scheduleTypes: 'daily', 'weekly'
+ * scheduleDays: array of integers 0-6 (0=Sunday, 6=Saturday) - required for weekly
  */
-function generateRoutine(suffix = '') {
+function generateRoutine(suffix = '', scheduleType = 'daily') {
   return {
-    name: `Morning Routine ${suffix || testId()}`
+    name: `Morning Routine ${suffix || testId()}`,
+    scheduleType,
+    scheduleDays: scheduleType === 'weekly' ? [1, 2, 3, 4, 5] : null  // Mon-Fri for weekly
   };
 }
 

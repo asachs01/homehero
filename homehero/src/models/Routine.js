@@ -13,23 +13,27 @@ class Routine {
    * @returns {Object} The created routine
    */
   static create(householdId, data) {
-    const { name, assignedUserId, tasks = [] } = data;
+    const { name, scheduleType, scheduleDays = null, assignedUserId = null, tasks = [] } = data;
 
     const db = getDb();
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
+    // Store scheduleDays as JSON string if it's an array
+    const scheduleDaysJson = scheduleDays ? JSON.stringify(scheduleDays) : null;
+
     db.prepare(
-      'INSERT INTO routines (id, household_id, name, assigned_user_id, created_at) VALUES (?, ?, ?, ?, ?)'
-    ).run(id, householdId, name, assignedUserId, now);
+      'INSERT INTO routines (id, household_id, name, schedule_type, schedule_days, assigned_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, householdId, name, scheduleType, scheduleDaysJson, assignedUserId, now);
 
     const row = db.prepare('SELECT * FROM routines WHERE id = ?').get(id);
     const routine = Routine.formatRoutine(row);
 
     // Add tasks if provided
     if (tasks.length > 0) {
-      for (const task of tasks) {
-        Routine.addTask(routine.id, task.taskId, task.position);
+      for (let i = 0; i < tasks.length; i++) {
+        const task = tasks[i];
+        Routine.addTask(routine.id, task.taskId, task.sortOrder !== undefined ? task.sortOrder : i);
       }
       routine.tasks = Routine.getRoutineTasks(routine.id);
     } else {
@@ -104,6 +108,7 @@ class Routine {
 
     const fieldMap = {
       name: 'name',
+      scheduleType: 'schedule_type',
       assignedUserId: 'assigned_user_id'
     };
 
@@ -112,6 +117,12 @@ class Routine {
         updates.push(`${column} = ?`);
         params.push(data[key]);
       }
+    }
+
+    // Handle scheduleDays separately (needs JSON stringify)
+    if (data.scheduleDays !== undefined) {
+      updates.push('schedule_days = ?');
+      params.push(data.scheduleDays ? JSON.stringify(data.scheduleDays) : null);
     }
 
     if (updates.length === 0) {
@@ -145,23 +156,36 @@ class Routine {
    * Add a task to a routine
    * @param {string} routineId - The routine UUID
    * @param {string} taskId - The task UUID
-   * @param {number} position - The position in the routine
+   * @param {number} sortOrder - The sort order in the routine
    */
-  static addTask(routineId, taskId, position) {
+  static addTask(routineId, taskId, sortOrder) {
     const db = getDb();
+    const id = crypto.randomUUID();
 
-    // If position not provided, add at the end
-    if (position === undefined || position === null) {
+    // If sortOrder not provided, add at the end
+    if (sortOrder === undefined || sortOrder === null) {
       const row = db.prepare(
-        'SELECT COALESCE(MAX(position), 0) + 1 as next_position FROM routine_tasks WHERE routine_id = ?'
+        'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM routine_tasks WHERE routine_id = ?'
       ).get(routineId);
-      position = row.next_position;
+      sortOrder = row.next_order;
     }
 
-    // SQLite doesn't have ON CONFLICT DO UPDATE with same syntax, use INSERT OR REPLACE
-    db.prepare(
-      'INSERT OR REPLACE INTO routine_tasks (routine_id, task_id, position) VALUES (?, ?, ?)'
-    ).run(routineId, taskId, position);
+    // Check if task already exists in routine
+    const existing = db.prepare(
+      'SELECT id FROM routine_tasks WHERE routine_id = ? AND task_id = ?'
+    ).get(routineId, taskId);
+
+    if (existing) {
+      // Update sort_order if task already exists
+      db.prepare(
+        'UPDATE routine_tasks SET sort_order = ? WHERE id = ?'
+      ).run(sortOrder, existing.id);
+    } else {
+      // Insert new entry
+      db.prepare(
+        'INSERT INTO routine_tasks (id, routine_id, task_id, sort_order) VALUES (?, ?, ?, ?)'
+      ).run(id, routineId, taskId, sortOrder);
+    }
   }
 
   /**
@@ -186,7 +210,7 @@ class Routine {
   static reorderTasks(routineId, taskOrder) {
     const db = getDb();
     const updateStmt = db.prepare(
-      'UPDATE routine_tasks SET position = ? WHERE routine_id = ? AND task_id = ?'
+      'UPDATE routine_tasks SET sort_order = ? WHERE routine_id = ? AND task_id = ?'
     );
 
     for (let i = 0; i < taskOrder.length; i++) {
@@ -197,49 +221,29 @@ class Routine {
   /**
    * Get all tasks for a routine in order
    * @param {string} routineId - The routine UUID
-   * @returns {Object[]} Array of tasks with position
+   * @returns {Object[]} Array of tasks with sortOrder
    */
   static getRoutineTasks(routineId) {
     const db = getDb();
     const rows = db.prepare(
-      `SELECT t.*, rt.position
+      `SELECT t.*, rt.id as routine_task_id, rt.sort_order
        FROM tasks t
        JOIN routine_tasks rt ON t.id = rt.task_id
        WHERE rt.routine_id = ?
-       ORDER BY rt.position ASC`
+       ORDER BY rt.sort_order ASC`
     ).all(routineId);
 
     return rows.map(row => {
-      let schedule = row.schedule;
-      let timeWindow = row.time_window;
-
-      // Parse JSON if stored as string
-      if (typeof schedule === 'string') {
-        try {
-          schedule = JSON.parse(schedule);
-        } catch (e) {
-          schedule = [];
-        }
-      }
-      if (typeof timeWindow === 'string') {
-        try {
-          timeWindow = JSON.parse(timeWindow);
-        } catch (e) {
-          timeWindow = null;
-        }
-      }
-
       return {
         id: row.id,
+        routineTaskId: row.routine_task_id,
         householdId: row.household_id,
         name: row.name,
         description: row.description,
         icon: row.icon,
-        type: row.type,
-        dollarValue: parseFloat(row.dollar_value) || 0,
-        schedule: schedule || [],
-        timeWindow: timeWindow,
-        position: row.position,
+        valueCents: row.value_cents || 0,
+        category: row.category,
+        sortOrder: row.sort_order,
         createdAt: row.created_at
       };
     });
@@ -276,10 +280,23 @@ class Routine {
    * @returns {Object} Formatted routine object
    */
   static formatRoutine(row) {
+    let scheduleDays = row.schedule_days;
+
+    // Parse JSON if stored as string
+    if (typeof scheduleDays === 'string') {
+      try {
+        scheduleDays = JSON.parse(scheduleDays);
+      } catch (e) {
+        scheduleDays = null;
+      }
+    }
+
     return {
       id: row.id,
       householdId: row.household_id,
       name: row.name,
+      scheduleType: row.schedule_type,
+      scheduleDays: scheduleDays,
       assignedUserId: row.assigned_user_id,
       createdAt: row.created_at
     };

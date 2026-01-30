@@ -1,5 +1,5 @@
 -- HomeHero Database Schema (SQLite)
--- Version: 1.0.0
+-- Version: 1.2.0
 
 -- Households table
 CREATE TABLE IF NOT EXISTS households (
@@ -32,15 +32,13 @@ CREATE TABLE IF NOT EXISTS tasks (
     name TEXT NOT NULL,
     description TEXT,
     icon TEXT,
-    type TEXT NOT NULL CHECK (type IN ('daily', 'weekly', 'one-time')),
-    dollar_value REAL DEFAULT 0.00,
-    schedule TEXT,
-    time_window TEXT,
+    value_cents INTEGER DEFAULT 0,
+    category TEXT,
     created_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_tasks_household_id ON tasks(household_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_type ON tasks(type);
+CREATE INDEX IF NOT EXISTS idx_tasks_category ON tasks(category);
 
 -- Task assignments (many-to-many relationship between tasks and users)
 CREATE TABLE IF NOT EXISTS task_assignments (
@@ -56,22 +54,27 @@ CREATE TABLE IF NOT EXISTS routines (
     id TEXT PRIMARY KEY,
     household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
+    schedule_type TEXT NOT NULL CHECK (schedule_type IN ('daily', 'weekly')),
+    schedule_days TEXT,
     assigned_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
     created_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_routines_household_id ON routines(household_id);
 CREATE INDEX IF NOT EXISTS idx_routines_assigned_user_id ON routines(assigned_user_id);
+CREATE INDEX IF NOT EXISTS idx_routines_schedule_type ON routines(schedule_type);
 
 -- Routine tasks (ordered list of tasks in a routine)
 CREATE TABLE IF NOT EXISTS routine_tasks (
+    id TEXT PRIMARY KEY,
     routine_id TEXT NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
     task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-    position INTEGER NOT NULL,
-    PRIMARY KEY (routine_id, task_id)
+    sort_order INTEGER NOT NULL,
+    UNIQUE (routine_id, task_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_routine_tasks_position ON routine_tasks(routine_id, position);
+CREATE INDEX IF NOT EXISTS idx_routine_tasks_routine_id ON routine_tasks(routine_id);
+CREATE INDEX IF NOT EXISTS idx_routine_tasks_sort_order ON routine_tasks(routine_id, sort_order);
 
 -- Completions table (tracks task completions)
 CREATE TABLE IF NOT EXISTS completions (
@@ -142,8 +145,8 @@ CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created
 -- Additional Performance Indexes
 -- =============================================================================
 
--- Composite index for task lookups by household and type (used in bonus tasks query)
-CREATE INDEX IF NOT EXISTS idx_tasks_household_type ON tasks(household_id, type);
+-- Composite index for task lookups by household and category (used in task filtering)
+CREATE INDEX IF NOT EXISTS idx_tasks_household_category ON tasks(household_id, category);
 
 -- Composite index for completions lookup by task and date (used to check if task already claimed)
 CREATE INDEX IF NOT EXISTS idx_completions_task_date ON completions(task_id, completion_date);

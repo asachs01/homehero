@@ -1,0 +1,401 @@
+[
+  {
+    "id": "broom",
+    "name": "Broom",
+    "emoji": "🧹",
+    "category": "cleaning",
+    "color": "#8B4513"
+  },
+  {
+    "id": "mop",
+    "name": "Mop",
+    "emoji": "🪣",
+    "category": "cleaning",
+    "color": "#4682B4"
+  },
+  {
+    "id": "vacuum",
+    "name": "Vacuum",
+    "emoji": "🧽",
+    "category": "cleaning",
+    "color": "#708090"
+  },
+  {
+    "id": "sponge",
+    "name": "Sponge",
+    "emoji": "🧽",
+    "category": "cleaning",
+    "color": "#FFD700"
+  },
+  {
+    "id": "spray-bottle",
+    "name": "Spray Bottle",
+    "emoji": "🧴",
+    "category": "cleaning",
+    "color": "#87CEEB"
+  },
+  {
+    "id": "trash",
+    "name": "Trash",
+    "emoji": "🗑️",
+    "category": "cleaning",
+    "color": "#696969"
+  },
+  {
+    "id": "soap",
+    "name": "Soap",
+    "emoji": "🧼",
+    "category": "cleaning",
+    "color": "#FFB6C1"
+  },
+  {
+    "id": "sparkles",
+    "name": "Sparkles",
+    "emoji": "✨",
+    "category": "cleaning",
+    "color": "#FFD700"
+  },
+  {
+    "id": "bed",
+    "name": "Make Bed",
+    "emoji": "🛏️",
+    "category": "bedroom",
+    "color": "#9370DB"
+  },
+  {
+    "id": "clothes",
+    "name": "Clothes",
+    "emoji": "👕",
+    "category": "bedroom",
+    "color": "#20B2AA"
+  },
+  {
+    "id": "closet",
+    "name": "Closet",
+    "emoji": "🚪",
+    "category": "bedroom",
+    "color": "#8B4513"
+  },
+  {
+    "id": "hanger",
+    "name": "Hanger",
+    "emoji": "🪝",
+    "category": "bedroom",
+    "color": "#C0C0C0"
+  },
+  {
+    "id": "lamp",
+    "name": "Lamp",
+    "emoji": "🪔",
+    "category": "bedroom",
+    "color": "#FFD700"
+  },
+  {
+    "id": "toilet",
+    "name": "Toilet",
+    "emoji": "🚽",
+    "category": "bathroom",
+    "color": "#F5F5F5"
+  },
+  {
+    "id": "shower",
+    "name": "Shower",
+    "emoji": "🚿",
+    "category": "bathroom",
+    "color": "#87CEEB"
+  },
+  {
+    "id": "toothbrush",
+    "name": "Toothbrush",
+    "emoji": "🪥",
+    "category": "bathroom",
+    "color": "#00CED1"
+  },
+  {
+    "id": "bathtub",
+    "name": "Bathtub",
+    "emoji": "🛁",
+    "category": "bathroom",
+    "color": "#B0E0E6"
+  },
+  {
+    "id": "towel",
+    "name": "Towel",
+    "emoji": "🧻",
+    "category": "bathroom",
+    "color": "#F5F5DC"
+  },
+  {
+    "id": "mirror",
+    "name": "Mirror",
+    "emoji": "🪞",
+    "category": "bathroom",
+    "color": "#E6E6FA"
+  },
+  {
+    "id": "dishes",
+    "name": "Dishes",
+    "emoji": "🍽️",
+    "category": "kitchen",
+    "color": "#F5F5F5"
+  },
+  {
+    "id": "cooking",
+    "name": "Cooking",
+    "emoji": "🍳",
+    "category": "kitchen",
+    "color": "#FFD700"
+  },
+  {
+    "id": "kitchen-trash",
+    "name": "Kitchen Trash",
+    "emoji": "🗑️",
+    "category": "kitchen",
+    "color": "#696969"
+  },
+  {
+    "id": "refrigerator",
+    "name": "Refrigerator",
+    "emoji": "🧊",
+    "category": "kitchen",
+    "color": "#B0C4DE"
+  },
+  {
+    "id": "groceries",
+    "name": "Groceries",
+    "emoji": "🛒",
+    "category": "kitchen",
+    "color": "#32CD32"
+  },
+  {
+    "id": "utensils",
+    "name": "Utensils",
+    "emoji": "🍴",
+    "category": "kitchen",
+    "color": "#C0C0C0"
+  },
+  {
+    "id": "countertop",
+    "name": "Countertop",
+    "emoji": "🧽",
+    "category": "kitchen",
+    "color": "#D2B48C"
+  },
+  {
+    "id": "lawn",
+    "name": "Lawn",
+    "emoji": "🌿",
+    "category": "outdoor",
+    "color": "#228B22"
+  },
+  {
+    "id": "garden",
+    "name": "Garden",
+    "emoji": "🌻",
+    "category": "outdoor",
+    "color": "#FFD700"
+  },
+  {
+    "id": "car",
+    "name": "Car",
+    "emoji": "🚗",
+    "category": "outdoor",
+    "color": "#4169E1"
+  },
+  {
+    "id": "leaves",
+    "name": "Leaves",
+    "emoji": "🍂",
+    "category": "outdoor",
+    "color": "#D2691E"
+  },
+  {
+    "id": "snow",
+    "name": "Snow",
+    "emoji": "❄️",
+    "category": "outdoor",
+    "color": "#87CEEB"
+  },
+  {
+    "id": "watering",
+    "name": "Watering",
+    "emoji": "💧",
+    "category": "outdoor",
+    "color": "#1E90FF"
+  },
+  {
+    "id": "bicycle",
+    "name": "Bicycle",
+    "emoji": "🚲",
+    "category": "outdoor",
+    "color": "#FF6347"
+  },
+  {
+    "id": "books",
+    "name": "Books",
+    "emoji": "📚",
+    "category": "homework",
+    "color": "#8B0000"
+  },
+  {
+    "id": "pencil",
+    "name": "Pencil",
+    "emoji": "✏️",
+    "category": "homework",
+    "color": "#FFD700"
+  },
+  {
+    "id": "computer",
+    "name": "Computer",
+    "emoji": "💻",
+    "category": "homework",
+    "color": "#708090"
+  },
+  {
+    "id": "backpack",
+    "name": "Backpack",
+    "emoji": "🎒",
+    "category": "homework",
+    "color": "#FF4500"
+  },
+  {
+    "id": "notebook",
+    "name": "Notebook",
+    "emoji": "📓",
+    "category": "homework",
+    "color": "#4682B4"
+  },
+  {
+    "id": "reading",
+    "name": "Reading",
+    "emoji": "📖",
+    "category": "homework",
+    "color": "#DEB887"
+  },
+  {
+    "id": "dog-bowl",
+    "name": "Dog Bowl",
+    "emoji": "🦴",
+    "category": "pets",
+    "color": "#D2B48C"
+  },
+  {
+    "id": "cat-food",
+    "name": "Cat Food",
+    "emoji": "🐱",
+    "category": "pets",
+    "color": "#FFB6C1"
+  },
+  {
+    "id": "fish",
+    "name": "Fish",
+    "emoji": "🐠",
+    "category": "pets",
+    "color": "#FFA500"
+  },
+  {
+    "id": "pet-walk",
+    "name": "Pet Walk",
+    "emoji": "🐕",
+    "category": "pets",
+    "color": "#DEB887"
+  },
+  {
+    "id": "bird",
+    "name": "Bird",
+    "emoji": "🐦",
+    "category": "pets",
+    "color": "#87CEEB"
+  },
+  {
+    "id": "hamster",
+    "name": "Hamster",
+    "emoji": "🐹",
+    "category": "pets",
+    "color": "#F4A460"
+  },
+  {
+    "id": "laundry",
+    "name": "Laundry",
+    "emoji": "🧺",
+    "category": "misc",
+    "color": "#DEB887"
+  },
+  {
+    "id": "mail",
+    "name": "Mail",
+    "emoji": "📬",
+    "category": "misc",
+    "color": "#4169E1"
+  },
+  {
+    "id": "recycling",
+    "name": "Recycling",
+    "emoji": "♻️",
+    "category": "misc",
+    "color": "#228B22"
+  },
+  {
+    "id": "keys",
+    "name": "Keys",
+    "emoji": "🔑",
+    "category": "misc",
+    "color": "#FFD700"
+  },
+  {
+    "id": "phone",
+    "name": "Phone",
+    "emoji": "📱",
+    "category": "misc",
+    "color": "#708090"
+  },
+  {
+    "id": "calendar",
+    "name": "Calendar",
+    "emoji": "📅",
+    "category": "misc",
+    "color": "#DC143C"
+  },
+  {
+    "id": "clock",
+    "name": "Clock",
+    "emoji": "⏰",
+    "category": "misc",
+    "color": "#FFD700"
+  },
+  {
+    "id": "money",
+    "name": "Money",
+    "emoji": "💰",
+    "category": "misc",
+    "color": "#228B22"
+  },
+  {
+    "id": "gift",
+    "name": "Gift",
+    "emoji": "🎁",
+    "category": "misc",
+    "color": "#FF69B4"
+  },
+  {
+    "id": "star",
+    "name": "Star",
+    "emoji": "⭐",
+    "category": "misc",
+    "color": "#FFD700"
+  },
+  {
+    "id": "heart",
+    "name": "Heart",
+    "emoji": "❤️",
+    "category": "misc",
+    "color": "#DC143C"
+  },
+  {
+    "id": "check",
+    "name": "Check",
+    "emoji": "✅",
+    "category": "misc",
+    "color": "#32CD32"
+  }
+]

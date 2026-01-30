@@ -10,6 +10,7 @@ const { generateToken } = require('../auth/jwt');
 const { requireAuth } = require('../middleware/auth');
 const { cacheUserList } = require('../middleware/cache');
 const avatars = require('../data/avatars.json');
+const taskIcons = require('../data/task-icons.json');
 
 /**
  * GET /api/users
@@ -46,6 +47,32 @@ router.get('/api/users', cacheUserList, async (req, res) => {
  */
 router.get('/api/avatars', (req, res) => {
   res.json(avatars);
+});
+
+/**
+ * GET /api/task-icons
+ * List all available task/chore icons organized by category
+ * Returns icons with: id, name, emoji, category, color
+ */
+router.get('/api/task-icons', (req, res) => {
+  // Optional: filter by category
+  const { category } = req.query;
+
+  if (category) {
+    const filtered = taskIcons.filter(icon => icon.category === category);
+    return res.json(filtered);
+  }
+
+  res.json(taskIcons);
+});
+
+/**
+ * GET /api/task-icons/categories
+ * List all available task icon categories
+ */
+router.get('/api/task-icons/categories', (req, res) => {
+  const categories = [...new Set(taskIcons.map(icon => icon.category))];
+  res.json(categories);
 });
 
 /**

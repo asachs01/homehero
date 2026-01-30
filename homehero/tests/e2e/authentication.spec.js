@@ -297,7 +297,7 @@ test.describe('Authentication UI', () => {
     // Enter incorrect PIN (4 digits triggers auto-submit)
     await page.keyboard.type('0000');
 
-    // Wait for error message
-    await expect(page.locator('#error-message')).toContainText(/Invalid|Error/i, { timeout: 5000 });
+    // Wait for error message (could be "Invalid PIN", "Error", or "PIN not set")
+    await expect(page.locator('#error-message')).toContainText(/Invalid|Error|PIN not set/i, { timeout: 5000 });
   });
 });

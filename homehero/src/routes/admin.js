@@ -194,7 +194,7 @@ router.get('/api/admin/tasks', async (req, res) => {
 /**
  * POST /api/admin/tasks
  * Create a new task
- * Body: { name, type, description?, icon?, dollarValue?, schedule?, timeWindow?, assignedUsers? }
+ * Body: { name, description?, icon?, valueCents?, category?, assignedUsers? }
  */
 router.post('/api/admin/tasks', async (req, res) => {
   try {
@@ -217,7 +217,7 @@ router.post('/api/admin/tasks', async (req, res) => {
 /**
  * PUT /api/admin/tasks/:id
  * Update a task
- * Body: { name?, type?, description?, icon?, dollarValue?, schedule?, timeWindow?, assignedUsers? }
+ * Body: { name?, description?, icon?, valueCents?, category?, assignedUsers? }
  */
 router.put('/api/admin/tasks/:id', async (req, res) => {
   try {

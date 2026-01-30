@@ -182,8 +182,7 @@ test.describe('Input Validation Security', () => {
 
   test('should reject SQL injection attempts in task name', async () => {
     const response = await api.post('/api/tasks', {
-      name: "'; DROP TABLE tasks; --",
-      type: 'daily'
+      name: "'; DROP TABLE tasks; --"
     });
 
     // Should either reject or sanitize - not execute SQL
@@ -197,7 +196,6 @@ test.describe('Input Validation Security', () => {
   test('should reject XSS attempts in task description', async () => {
     const response = await api.post('/api/tasks', {
       name: 'Test Task',
-      type: 'daily',
       description: '<script>alert("xss")</script>'
     });
 
@@ -212,8 +210,7 @@ test.describe('Input Validation Security', () => {
   test('should validate numeric fields', async () => {
     const response = await api.post('/api/tasks', {
       name: 'Test Task',
-      type: 'daily',
-      dollarValue: 'not-a-number'
+      valueCents: 'not-a-number'
     });
 
     // Should reject or coerce
@@ -279,8 +276,7 @@ test.describe('Authorization Security', () => {
     await api.login(user1.id, '1111');
 
     const task = await api.createTask({
-      name: 'Household 1 Task',
-      type: 'daily'
+      name: 'Household 1 Task'
     });
 
     // Login as user2 and try to access user1's task
@@ -297,8 +293,7 @@ test.describe('Authorization Security', () => {
     await api.login(user1.id, '1111');
 
     const task = await api.createTask({
-      name: 'Protected Task',
-      type: 'daily'
+      name: 'Protected Task'
     });
 
     // Login as user2 and try to modify
@@ -329,8 +324,7 @@ test.describe('Authorization Security', () => {
 
     // Child should not be able to create tasks
     const createResponse = await api.post('/api/tasks', {
-      name: 'Child Task',
-      type: 'daily'
+      name: 'Child Task'
     });
     expect(createResponse.status()).toBe(403);
 
