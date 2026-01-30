@@ -9,6 +9,8 @@ const { getDb } = require('../db/pool');
 const Routine = require('../models/Routine');
 const Task = require('../models/Task');
 const Completion = require('../models/Completion');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
 const { cacheDashboard, invalidateUser } = require('../middleware/cache');
 
@@ -187,6 +189,21 @@ router.post('/api/dashboard/complete/:taskId', requireAuth, async (req, res) => 
 
     // Invalidate dashboard cache for this user
     invalidateUser(userId);
+
+    // Notify parents in the household about task completion
+    const currentUser = User.findById(userId);
+    if (currentUser && currentUser.role === 'child') {
+      const householdUsers = User.findByHousehold(req.user.householdId);
+      const parents = householdUsers.filter(u => u.role === 'parent');
+
+      for (const parent of parents) {
+        Notification.create(
+          parent.id,
+          'task_complete',
+          `${currentUser.name} completed '${task.name}' ✓`
+        );
+      }
+    }
 
     // Get updated balance
     const balance = Completion.getBalance(userId);
