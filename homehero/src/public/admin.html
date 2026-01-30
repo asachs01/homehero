@@ -57,7 +57,7 @@
 
     .header-text .subtitle {
       font-size: 0.9rem;
-      color: #9E9E9E;
+      color: #757575;
     }
 
     .header-actions {
@@ -86,7 +86,7 @@
     .logout-btn {
       background: none;
       border: 2px solid #E0E0E0;
-      color: #9E9E9E;
+      color: #757575;
       padding: 10px 20px;
       border-radius: 12px;
       font-size: 0.9rem;
@@ -127,7 +127,7 @@
       padding: 20px;
       font-size: 1rem;
       font-weight: 600;
-      color: #9E9E9E;
+      color: #757575;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
@@ -265,7 +265,7 @@
 
     .item-meta {
       font-size: 0.85rem;
-      color: #9E9E9E;
+      color: #757575;
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
@@ -341,7 +341,7 @@
 
     .action-btn.drag {
       background: #F5F5F5;
-      color: #9E9E9E;
+      color: #757575;
       cursor: grab;
     }
 
@@ -391,7 +391,7 @@
 
     .routine-tasks-title {
       font-size: 0.85rem;
-      color: #9E9E9E;
+      color: #757575;
       margin-bottom: 8px;
     }
 
@@ -436,7 +436,7 @@
     }
 
     .empty-state-text {
-      color: #9E9E9E;
+      color: #757575;
       margin-bottom: 20px;
     }
 
@@ -496,7 +496,7 @@
       background: none;
       border: none;
       font-size: 1.5rem;
-      color: #9E9E9E;
+      color: #757575;
       cursor: pointer;
       padding: 8px;
       line-height: 1;
@@ -550,7 +550,7 @@
 
     .form-hint {
       font-size: 0.8rem;
-      color: #9E9E9E;
+      color: #757575;
       margin-top: 6px;
     }
 
@@ -826,7 +826,7 @@
     }
 
     .access-denied-text {
-      color: #9E9E9E;
+      color: #757575;
       margin-bottom: 30px;
     }
 
@@ -965,7 +965,7 @@
     }
 
     .icon-picker-btn .picker-arrow {
-      color: #9E9E9E;
+      color: #757575;
       font-size: 0.8rem;
     }
 
@@ -980,7 +980,7 @@
     .icon-category-title {
       font-size: 0.9rem;
       font-weight: 600;
-      color: #9E9E9E;
+      color: #757575;
       text-transform: capitalize;
       margin-bottom: 10px;
       padding-bottom: 6px;
@@ -1069,7 +1069,7 @@
 
     .settings-description {
       font-size: 0.9rem;
-      color: #9E9E9E;
+      color: #757575;
       line-height: 1.4;
     }
 
@@ -1240,7 +1240,7 @@
 
     .payout-balance {
       font-size: 0.9rem;
-      color: #9E9E9E;
+      color: #757575;
     }
 
     .payout-balance-amount {
@@ -1264,7 +1264,7 @@
 
     .payout-stat-label {
       font-size: 0.75rem;
-      color: #9E9E9E;
+      color: #757575;
       text-transform: uppercase;
       margin-bottom: 4px;
     }
@@ -1317,7 +1317,7 @@
 
     .payout-btn.primary:disabled {
       background: #E0E0E0;
-      color: #9E9E9E;
+      color: #757575;
       cursor: not-allowed;
       transform: none;
       box-shadow: none;
@@ -1342,7 +1342,7 @@
 
     .month-selector-label {
       font-size: 0.9rem;
-      color: #9E9E9E;
+      color: #757575;
     }
 
     .month-selector select {
@@ -1368,7 +1368,7 @@
 
     .payout-history-title {
       font-size: 0.85rem;
-      color: #9E9E9E;
+      color: #757575;
       margin-bottom: 12px;
     }
 
@@ -1389,7 +1389,7 @@
     }
 
     .payout-history-date {
-      color: #9E9E9E;
+      color: #757575;
       flex-shrink: 0;
     }
 
@@ -1462,7 +1462,7 @@
     .payouts-empty {
       text-align: center;
       padding: 40px 20px;
-      color: #9E9E9E;
+      color: #757575;
     }
 
     .payouts-empty-icon {
@@ -1513,25 +1513,25 @@
     <!-- Admin Panel -->
     <div id="admin-panel" class="tabs-container" style="display: none;">
       <!-- Tabs Navigation -->
-      <div class="tabs-nav">
-        <button class="tab-btn active" data-tab="users" onclick="switchTab('users')">
-          <span class="tab-icon">&#x1F465;</span>
+      <div class="tabs-nav" role="tablist">
+        <button class="tab-btn active" data-tab="users" onclick="switchTab('users')" role="tab" aria-selected="true" aria-controls="tab-users">
+          <span class="tab-icon" aria-hidden="true">&#x1F465;</span>
           <span>Users</span>
         </button>
-        <button class="tab-btn" data-tab="tasks" onclick="switchTab('tasks')">
-          <span class="tab-icon">&#x2705;</span>
+        <button class="tab-btn" data-tab="tasks" onclick="switchTab('tasks')" role="tab" aria-selected="false" aria-controls="tab-tasks">
+          <span class="tab-icon" aria-hidden="true">&#x2705;</span>
           <span>Tasks</span>
         </button>
-        <button class="tab-btn" data-tab="routines" onclick="switchTab('routines')">
-          <span class="tab-icon">&#x1F4CB;</span>
+        <button class="tab-btn" data-tab="routines" onclick="switchTab('routines')" role="tab" aria-selected="false" aria-controls="tab-routines">
+          <span class="tab-icon" aria-hidden="true">&#x1F4CB;</span>
           <span>Routines</span>
         </button>
-        <button class="tab-btn" data-tab="payouts" onclick="switchTab('payouts')">
-          <span class="tab-icon">&#x1F4B0;</span>
+        <button class="tab-btn" data-tab="payouts" onclick="switchTab('payouts')" role="tab" aria-selected="false" aria-controls="tab-payouts">
+          <span class="tab-icon" aria-hidden="true">&#x1F4B0;</span>
           <span>Payouts</span>
         </button>
-        <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">
-          <span class="tab-icon">&#x2699;&#xFE0F;</span>
+        <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')" role="tab" aria-selected="false" aria-controls="tab-settings">
+          <span class="tab-icon" aria-hidden="true">&#x2699;&#xFE0F;</span>
           <span>Settings</span>
         </button>
       </div>
@@ -3512,7 +3512,7 @@
         });
       } else {
         var noHistory = document.createElement('div');
-        noHistory.style.cssText = 'color: #9E9E9E; font-size: 0.9rem; padding: 8px;';
+        noHistory.style.cssText = 'color: #757575; font-size: 0.9rem; padding: 8px;';
         noHistory.textContent = 'No payout history yet.';
         historyList.appendChild(noHistory);
       }

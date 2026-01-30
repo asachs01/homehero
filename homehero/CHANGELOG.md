@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.0] - 2026-01-30
 
+### Changed
+- **Improved color contrast for WCAG AA compliance** (`src/public/admin.html`, `src/public/dashboard.html`, `src/public/family-dashboard.html`, `src/public/login.html`, `src/public/onboarding.html`)
+  - Changed secondary text color from `#9E9E9E` (2.8:1 ratio) to `#757575` (4.6:1 ratio)
+  - Affects `.item-meta`, `.form-hint`, user greeting text, and other secondary/muted text elements
+  - Meets WCAG AA minimum contrast requirement of 4.5:1 for normal text
+
 ### Added
 - **Monthly payout summary view for parents** (`src/public/admin.html`, `src/routes/balance.js`)
   - New "Payouts" tab in admin panel for managing children's earnings
