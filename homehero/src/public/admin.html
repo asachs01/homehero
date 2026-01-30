@@ -889,6 +889,105 @@
         padding: 14px;
       }
     }
+
+    /* Icon Picker */
+    .icon-picker-btn {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #E0E0E0;
+      border-radius: 12px;
+      font-size: 1rem;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .icon-picker-btn:hover {
+      border-color: #BDBDBD;
+    }
+
+    .icon-picker-btn:focus {
+      outline: none;
+      border-color: #7E57C2;
+    }
+
+    .icon-picker-btn .selected-icon {
+      font-size: 1.5rem;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #F5F5F5;
+      border-radius: 8px;
+    }
+
+    .icon-picker-btn .picker-label {
+      flex: 1;
+      text-align: left;
+      color: #5D4E6D;
+    }
+
+    .icon-picker-btn .picker-arrow {
+      color: #9E9E9E;
+      font-size: 0.8rem;
+    }
+
+    .icon-picker-modal .modal-content {
+      max-width: 600px;
+    }
+
+    .icon-category {
+      margin-bottom: 20px;
+    }
+
+    .icon-category-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #9E9E9E;
+      text-transform: capitalize;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #F0F0F0;
+    }
+
+    .icon-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .icon-option {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      background: #F8F9FA;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      transition: all 0.2s;
+    }
+
+    .icon-option:hover {
+      background: #EEEEEE;
+      transform: scale(1.05);
+    }
+
+    .icon-option.selected {
+      border-color: #7E57C2;
+      background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
+    }
+
+    .icon-option:focus {
+      outline: none;
+      border-color: #7E57C2;
+    }
   </style>
 </head>
 <body>
@@ -1068,8 +1167,13 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="task-icon">Icon</label>
-          <input type="text" id="task-icon" class="form-input" placeholder="Emoji or text icon" maxlength="10">
+          <label class="form-label">Icon</label>
+          <input type="hidden" id="task-icon">
+          <button type="button" class="icon-picker-btn" onclick="openIconPicker()">
+            <span class="selected-icon" id="task-icon-preview">-</span>
+            <span class="picker-label" id="task-icon-label">Choose an icon...</span>
+            <span class="picker-arrow">&#9660;</span>
+          </button>
         </div>
 
         <div class="form-group">
@@ -1121,6 +1225,49 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label" for="routine-schedule-type">Schedule</label>
+          <select id="routine-schedule-type" class="form-select" onchange="toggleScheduleDays()">
+            <option value="daily">Daily (every day)</option>
+            <option value="weekly">Weekly (specific days)</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="schedule-days-group" style="display: none;">
+          <label class="form-label">Days of Week</label>
+          <div class="checkbox-group" id="schedule-days-checkboxes">
+            <label class="checkbox-item" data-day="0">
+              <input type="checkbox" name="schedule-day" value="0">
+              <span>Sun</span>
+            </label>
+            <label class="checkbox-item" data-day="1">
+              <input type="checkbox" name="schedule-day" value="1">
+              <span>Mon</span>
+            </label>
+            <label class="checkbox-item" data-day="2">
+              <input type="checkbox" name="schedule-day" value="2">
+              <span>Tue</span>
+            </label>
+            <label class="checkbox-item" data-day="3">
+              <input type="checkbox" name="schedule-day" value="3">
+              <span>Wed</span>
+            </label>
+            <label class="checkbox-item" data-day="4">
+              <input type="checkbox" name="schedule-day" value="4">
+              <span>Thu</span>
+            </label>
+            <label class="checkbox-item" data-day="5">
+              <input type="checkbox" name="schedule-day" value="5">
+              <span>Fri</span>
+            </label>
+            <label class="checkbox-item" data-day="6">
+              <input type="checkbox" name="schedule-day" value="6">
+              <span>Sat</span>
+            </label>
+          </div>
+          <div class="form-hint">Select which days this routine should be available</div>
+        </div>
+
+        <div class="form-group">
           <label class="form-label">Tasks in Routine</label>
           <div class="task-select-list" id="routine-task-select">
             <!-- Dynamically populated -->
@@ -1151,6 +1298,19 @@
     </div>
   </div>
 
+  <!-- Icon Picker Modal -->
+  <div id="icon-picker-modal" class="modal-overlay icon-picker-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Choose an Icon</h3>
+        <button class="modal-close" onclick="closeIconPicker()">&times;</button>
+      </div>
+      <div id="icon-picker-content">
+        <!-- Dynamically populated with icons grouped by category -->
+      </div>
+    </div>
+  </div>
+
   <script>
     // State
     var users = [];
@@ -1176,6 +1336,10 @@
 
     var selectedAvatar = avatarOptions[0];
 
+    // Task icons (loaded from API)
+    var taskIcons = [];
+    var selectedTaskIcon = null;
+
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
       var token = localStorage.getItem('token');
@@ -1196,6 +1360,7 @@
 
         initAvatarPicker();
         initCheckboxes();
+        initScheduleDayCheckboxes();
         loadData();
       } catch (e) {
         console.error('Error parsing user data:', e);
@@ -1248,10 +1413,11 @@
       try {
         var token = localStorage.getItem('token');
 
-        var [usersRes, tasksRes, routinesRes] = await Promise.all([
+        var [usersRes, tasksRes, routinesRes, iconsRes] = await Promise.all([
           fetch('./api/admin/users', { headers: { 'Authorization': 'Bearer ' + token } }),
           fetch('./api/admin/tasks', { headers: { 'Authorization': 'Bearer ' + token } }),
-          fetch('./api/admin/routines', { headers: { 'Authorization': 'Bearer ' + token } })
+          fetch('./api/admin/routines', { headers: { 'Authorization': 'Bearer ' + token } }),
+          fetch('./api/task-icons', { headers: { 'Authorization': 'Bearer ' + token } })
         ]);
 
         if (usersRes.status === 401 || tasksRes.status === 401 || routinesRes.status === 401) {
@@ -1267,6 +1433,11 @@
         users = await usersRes.json();
         tasks = await tasksRes.json();
         routines = await routinesRes.json();
+
+        if (iconsRes.ok) {
+          taskIcons = await iconsRes.json();
+          renderIconPicker();
+        }
 
         renderUsers();
         renderTasks();
@@ -1760,6 +1931,119 @@
     }
 
     // ===================
+    // ICON PICKER
+    // ===================
+
+    function renderIconPicker() {
+      var container = document.getElementById('icon-picker-content');
+      while (container.firstChild) container.removeChild(container.firstChild);
+
+      // Group icons by category
+      var categories = {};
+      var categoryOrder = ['cleaning', 'bedroom', 'bathroom', 'kitchen', 'outdoor', 'homework', 'pets', 'misc'];
+
+      taskIcons.forEach(function(icon) {
+        var cat = icon.category || 'misc';
+        if (!categories[cat]) {
+          categories[cat] = [];
+        }
+        categories[cat].push(icon);
+      });
+
+      // Render each category
+      categoryOrder.forEach(function(catName) {
+        if (!categories[catName] || categories[catName].length === 0) return;
+
+        var categoryDiv = document.createElement('div');
+        categoryDiv.className = 'icon-category';
+
+        var title = document.createElement('div');
+        title.className = 'icon-category-title';
+        title.textContent = catName;
+
+        var grid = document.createElement('div');
+        grid.className = 'icon-grid';
+
+        categories[catName].forEach(function(icon) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'icon-option';
+          btn.textContent = icon.emoji;
+          btn.title = icon.name;
+          btn.dataset.iconId = icon.id;
+          btn.dataset.iconEmoji = icon.emoji;
+          btn.dataset.iconName = icon.name;
+          btn.onclick = function() {
+            selectIcon(icon);
+          };
+          grid.appendChild(btn);
+        });
+
+        categoryDiv.appendChild(title);
+        categoryDiv.appendChild(grid);
+        container.appendChild(categoryDiv);
+      });
+    }
+
+    function openIconPicker() {
+      // Update selected state based on current icon
+      var currentEmoji = document.getElementById('task-icon').value;
+      document.querySelectorAll('.icon-option').forEach(function(opt) {
+        opt.classList.toggle('selected', opt.dataset.iconEmoji === currentEmoji);
+      });
+
+      document.getElementById('icon-picker-modal').classList.add('visible');
+    }
+
+    function closeIconPicker() {
+      document.getElementById('icon-picker-modal').classList.remove('visible');
+    }
+
+    function selectIcon(icon) {
+      selectedTaskIcon = icon;
+      document.getElementById('task-icon').value = icon.emoji;
+      document.getElementById('task-icon-preview').textContent = icon.emoji;
+      document.getElementById('task-icon-label').textContent = icon.name;
+
+      // Update selected state
+      document.querySelectorAll('.icon-option').forEach(function(opt) {
+        opt.classList.toggle('selected', opt.dataset.iconId === icon.id);
+      });
+
+      closeIconPicker();
+    }
+
+    function clearIconSelection() {
+      selectedTaskIcon = null;
+      document.getElementById('task-icon').value = '';
+      document.getElementById('task-icon-preview').textContent = '-';
+      document.getElementById('task-icon-label').textContent = 'Choose an icon...';
+
+      document.querySelectorAll('.icon-option').forEach(function(opt) {
+        opt.classList.remove('selected');
+      });
+    }
+
+    function updateIconPickerDisplay(iconEmoji) {
+      if (iconEmoji) {
+        document.getElementById('task-icon-preview').textContent = iconEmoji;
+        // Find the icon name from taskIcons
+        var icon = taskIcons.find(function(i) { return i.emoji === iconEmoji; });
+        if (icon) {
+          document.getElementById('task-icon-label').textContent = icon.name;
+          selectedTaskIcon = icon;
+        } else {
+          document.getElementById('task-icon-label').textContent = 'Custom icon';
+          selectedTaskIcon = null;
+        }
+      } else {
+        document.getElementById('task-icon-preview').textContent = '-';
+        document.getElementById('task-icon-label').textContent = 'Choose an icon...';
+        selectedTaskIcon = null;
+      }
+    }
+
+    // ===================
     // ROUTINES
     // ===================
 
@@ -1813,6 +2097,17 @@
         var taskCount = document.createElement('span');
         taskCount.textContent = (routine.tasks ? routine.tasks.length : 0) + ' tasks';
         meta.appendChild(taskCount);
+
+        // Show schedule info
+        var scheduleSpan = document.createElement('span');
+        if (routine.scheduleType === 'weekly' && routine.scheduleDays && routine.scheduleDays.length > 0) {
+          var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          var dayList = routine.scheduleDays.map(function(d) { return dayNames[d]; }).join(', ');
+          scheduleSpan.textContent = 'Weekly: ' + dayList;
+        } else {
+          scheduleSpan.textContent = 'Daily';
+        }
+        meta.appendChild(scheduleSpan);
 
         info.appendChild(name);
         info.appendChild(meta);
@@ -1941,6 +2236,22 @@
         document.getElementById('routine-id').value = routine.id;
         document.getElementById('routine-name').value = routine.name;
         document.getElementById('routine-user').value = routine.assignedUserId;
+
+        // Set schedule type
+        var scheduleType = routine.scheduleType || 'daily';
+        document.getElementById('routine-schedule-type').value = scheduleType;
+        toggleScheduleDays();
+
+        // Set schedule days if weekly
+        if (scheduleType === 'weekly' && routine.scheduleDays && Array.isArray(routine.scheduleDays)) {
+          routine.scheduleDays.forEach(function(day) {
+            var checkbox = document.querySelector('#schedule-days-checkboxes input[value="' + day + '"]');
+            if (checkbox) {
+              checkbox.checked = true;
+              checkbox.parentElement.classList.add('checked');
+            }
+          });
+        }
       } else {
         title.textContent = 'Add Routine';
         document.getElementById('routine-id').value = '';
@@ -1948,9 +2259,49 @@
         if (users.length > 0) {
           document.getElementById('routine-user').value = users[0].id;
         }
+
+        // Reset schedule to daily
+        document.getElementById('routine-schedule-type').value = 'daily';
+        toggleScheduleDays();
+
+        // Uncheck all day checkboxes
+        document.querySelectorAll('#schedule-days-checkboxes input').forEach(function(cb) {
+          cb.checked = false;
+          cb.parentElement.classList.remove('checked');
+        });
       }
 
       modal.classList.add('visible');
+    }
+
+    // Toggle schedule days visibility based on schedule type
+    function toggleScheduleDays() {
+      var scheduleType = document.getElementById('routine-schedule-type').value;
+      var daysGroup = document.getElementById('schedule-days-group');
+
+      if (scheduleType === 'weekly') {
+        daysGroup.style.display = 'block';
+      } else {
+        daysGroup.style.display = 'none';
+        // Uncheck all when switching to daily
+        document.querySelectorAll('#schedule-days-checkboxes input').forEach(function(cb) {
+          cb.checked = false;
+          cb.parentElement.classList.remove('checked');
+        });
+      }
+    }
+
+    // Initialize schedule day checkboxes
+    function initScheduleDayCheckboxes() {
+      document.querySelectorAll('#schedule-days-checkboxes .checkbox-item').forEach(function(item) {
+        var checkbox = item.querySelector('input[type="checkbox"]');
+        item.onclick = function(e) {
+          if (e.target.tagName !== 'INPUT') {
+            checkbox.checked = !checkbox.checked;
+          }
+          item.classList.toggle('checked', checkbox.checked);
+        };
+      });
     }
 
     function closeRoutineModal() {
@@ -1963,6 +2314,18 @@
       var id = document.getElementById('routine-id').value;
       var name = document.getElementById('routine-name').value.trim();
       var assignedUserId = document.getElementById('routine-user').value;
+      var scheduleType = document.getElementById('routine-schedule-type').value;
+
+      // Get selected schedule days for weekly schedule
+      var scheduleDays = null;
+      if (scheduleType === 'weekly') {
+        scheduleDays = [];
+        document.querySelectorAll('#schedule-days-checkboxes input:checked').forEach(function(cb) {
+          scheduleDays.push(parseInt(cb.value));
+        });
+        // Sort the days
+        scheduleDays.sort(function(a, b) { return a - b; });
+      }
 
       var selectedTasks = [];
       document.querySelectorAll('#routine-task-select input:checked').forEach(function(cb, index) {
@@ -1971,7 +2334,9 @@
 
       var body = {
         name: name,
-        assignedUserId: assignedUserId
+        assignedUserId: assignedUserId,
+        scheduleType: scheduleType,
+        scheduleDays: scheduleDays
       };
 
       if (!id) {
