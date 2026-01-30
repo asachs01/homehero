@@ -385,6 +385,7 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
+      min-height: 48px;
     }
 
     .action-btn:hover {
@@ -788,7 +789,7 @@
         <div class="vacation-toggle" id="vacation-toggle">
           <span class="toggle-icon">&#x1F3D6;&#xFE0F;</span>
           <span>Vacation Mode</span>
-          <div class="toggle-switch" id="vacation-switch"></div>
+          <div class="toggle-switch" id="vacation-switch" tabindex="0" role="switch" aria-checked="false" onkeydown="handleToggleKeydown(event, this)"></div>
         </div>
 
         <button class="logout-btn" onclick="logout()">Log Out</button>
@@ -1007,6 +1008,14 @@
       renderMembers();
     }
 
+    // Keyboard handler for toggle switches (accessibility)
+    function handleToggleKeydown(event, element) {
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        element.click();
+      }
+    }
+
     // Update vacation toggle state
     function updateVacationToggle(isOn) {
       var toggleContainer = document.getElementById('vacation-toggle');
@@ -1019,6 +1028,9 @@
         toggleContainer.classList.remove('active');
         toggleSwitch.classList.remove('on');
       }
+
+      // Update aria-checked for accessibility
+      toggleSwitch.setAttribute('aria-checked', isOn ? 'true' : 'false');
 
       // Add click handler
       toggleSwitch.onclick = function() {
