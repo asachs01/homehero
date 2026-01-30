@@ -5,7 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-01-29
+## [1.2.0] - 2026-01-30
+
+### Added
+- **Visual icon picker for task creation**
+  - 57 icons organized by category (cleaning, bedroom, bathroom, kitchen, outdoor, homework, pets, misc)
+  - Click-to-select icon picker modal in admin panel
+  - Icons display with emoji preview in task list
+- **Routine scheduling UI**
+  - Daily/Weekly schedule type selector
+  - Day-of-week checkboxes for weekly schedules (Sun-Sat)
+  - Schedule displays in routine list ("Daily" or "Weekly: Mon, Wed, Fri")
+- **Database migration support**
+  - Automatic migration from v1.1.0 to v1.2.0 schema
+  - Migrates dollar_value → value_cents, type → category
+  - Adds schedule columns to routines table
 
 ### Changed
 - **Database schema refactor for tasks and routines**
