@@ -15,6 +15,7 @@ const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
 const { startStreakCalculator } = require('./jobs/streakCalculator');
 const { startMissedTaskChecker } = require('./jobs/missedTaskChecker');
+const { startDailyDigest } = require('./jobs/dailyDigest');
 const { getStats: getCacheStats } = require('./middleware/cache');
 const { generalLimiter, authLimiter, onboardingLimiter } = require('./middleware/rateLimit');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
@@ -164,6 +165,10 @@ async function start() {
       // Missed task checker runs daily at 00:05 (after streak calculator)
       startMissedTaskChecker();
       console.log('Missed task checker job scheduled');
+
+      // Daily digest runs at 7 AM daily
+      startDailyDigest();
+      console.log('Daily digest job scheduled');
     }
 
     app.listen(PORT, () => {

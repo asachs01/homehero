@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-01-30
 
 ### Added
+- **Daily digest notifications for parents** (`src/jobs/dailyDigest.js`)
+  - Cron job runs at 7 AM daily
+  - Summarizes previous day's activity for each household
+  - Reports total tasks completed and missed across all children
+  - Highlights notable streak achievements (7+ day streaks)
+  - Sends notification to all parents in household using type 'system'
+  - Example message: "Yesterday: 12 tasks completed, 2 missed. Emma is on a 7-day streak!"
 - **Streak milestone display on child dashboard** (`src/public/dashboard.html`)
   - Shows "Next Milestone" indicator below streak count
   - Displays days remaining until next milestone reward
