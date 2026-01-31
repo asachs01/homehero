@@ -2304,7 +2304,7 @@
 
       try {
         var token = localStorage.getItem('token');
-        var url = id ? '/api/admin/users/' + id : '/api/admin/users';
+        var url = id ? './api/admin/users/' + id : './api/admin/users';
         var method = id ? 'PUT' : 'POST';
 
         var response = await fetch(url, {
@@ -2567,7 +2567,7 @@
 
       try {
         var token = localStorage.getItem('token');
-        var url = id ? '/api/admin/tasks/' + id : '/api/admin/tasks';
+        var url = id ? './api/admin/tasks/' + id : './api/admin/tasks';
         var method = id ? 'PUT' : 'POST';
 
         var response = await fetch(url, {
@@ -3053,7 +3053,7 @@
 
       try {
         var token = localStorage.getItem('token');
-        var url = id ? '/api/admin/routines/' + id : '/api/admin/routines';
+        var url = id ? './api/admin/routines/' + id : './api/admin/routines';
         var method = id ? 'PUT' : 'POST';
 
         var response = await fetch(url, {
