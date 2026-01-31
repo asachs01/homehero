@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-01-31
+
+### Fixed
+- **Improved error handling for save operations** (`src/public/admin.html`)
+  - Save operation catch blocks now display actual error messages instead of generic "Failed to save"
+  - Added try-catch around error response JSON parsing to handle non-JSON server errors
+  - Added session expiry detection with helpful "Session expired" message and automatic redirect
+  - Added debug console.log for save operations to help diagnose issues
+
 ## [1.2.0] - 2026-01-30
 
 ### Added

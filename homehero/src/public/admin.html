@@ -2304,8 +2304,14 @@
 
       try {
         var token = localStorage.getItem('token');
+        if (!token) {
+          alert('Session expired. Please log in again.');
+          logout();
+          return;
+        }
         var url = id ? './api/admin/users/' + id : './api/admin/users';
         var method = id ? 'PUT' : 'POST';
+        console.log('Saving user:', method, url, body);
 
         var response = await fetch(url, {
           method: method,
@@ -2322,8 +2328,12 @@
         }
 
         if (!response.ok) {
-          var err = await response.json();
-          alert('Error: ' + (err.details ? err.details.join(', ') : err.error));
+          try {
+            var err = await response.json();
+            alert('Error: ' + (err.details ? err.details.join(', ') : err.error));
+          } catch (parseErr) {
+            alert('Error: Server returned status ' + response.status);
+          }
           return;
         }
 
@@ -2331,7 +2341,9 @@
         await loadData();
       } catch (err) {
         console.error('Error saving user:', err);
-        alert('Failed to save user');
+        var msg = 'Failed to save user';
+        if (err.message) msg += ': ' + err.message;
+        alert(msg);
       }
     }
 
@@ -2566,8 +2578,14 @@
 
       try {
         var token = localStorage.getItem('token');
+        if (!token) {
+          alert('Session expired. Please log in again.');
+          logout();
+          return;
+        }
         var url = id ? './api/admin/tasks/' + id : './api/admin/tasks';
         var method = id ? 'PUT' : 'POST';
+        console.log('Saving task:', method, url, body);
 
         var response = await fetch(url, {
           method: method,
@@ -2584,8 +2602,12 @@
         }
 
         if (!response.ok) {
-          var err = await response.json();
-          alert('Error: ' + (err.details ? err.details.join(', ') : err.error));
+          try {
+            var err = await response.json();
+            alert('Error: ' + (err.details ? err.details.join(', ') : err.error));
+          } catch (parseErr) {
+            alert('Error: Server returned status ' + response.status);
+          }
           return;
         }
 
@@ -2593,7 +2615,9 @@
         await loadData();
       } catch (err) {
         console.error('Error saving task:', err);
-        alert('Failed to save task');
+        var msg = 'Failed to save task';
+        if (err.message) msg += ': ' + err.message;
+        alert(msg);
       }
     }
 
@@ -3052,8 +3076,14 @@
 
       try {
         var token = localStorage.getItem('token');
+        if (!token) {
+          alert('Session expired. Please log in again.');
+          logout();
+          return;
+        }
         var url = id ? './api/admin/routines/' + id : './api/admin/routines';
         var method = id ? 'PUT' : 'POST';
+        console.log('Saving routine:', method, url, body);
 
         var response = await fetch(url, {
           method: method,
@@ -3070,8 +3100,12 @@
         }
 
         if (!response.ok) {
-          var err = await response.json();
-          alert('Error: ' + (err.details ? err.details.join(', ') : err.error));
+          try {
+            var err = await response.json();
+            alert('Error: ' + (err.details ? err.details.join(', ') : err.error));
+          } catch (parseErr) {
+            alert('Error: Server returned status ' + response.status);
+          }
           return;
         }
 
@@ -3124,7 +3158,9 @@
         await loadData();
       } catch (err) {
         console.error('Error saving routine:', err);
-        alert('Failed to save routine');
+        var msg = 'Failed to save routine';
+        if (err.message) msg += ': ' + err.message;
+        alert(msg);
       }
     }
 
