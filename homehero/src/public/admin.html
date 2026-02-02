@@ -2762,28 +2762,33 @@
       });
     }
 
-    function updateIconPickerDisplay(iconId) {
-      if (iconId) {
+    function updateIconPickerDisplay(iconValue) {
+      if (iconValue) {
         // Find the icon by ID from taskIcons
-        var icon = taskIcons.find(function(i) { return i.id === iconId; });
+        var icon = taskIcons.find(function(i) { return i.id === iconValue; });
         if (icon) {
+          document.getElementById('task-icon').value = icon.id;
           document.getElementById('task-icon-preview').textContent = icon.emoji;
           document.getElementById('task-icon-label').textContent = icon.name;
           selectedTaskIcon = icon;
         } else {
           // Fallback for legacy emoji values - try to find by emoji
-          var legacyIcon = taskIcons.find(function(i) { return i.emoji === iconId; });
+          var legacyIcon = taskIcons.find(function(i) { return i.emoji === iconValue; });
           if (legacyIcon) {
+            // Convert legacy emoji to icon ID
+            document.getElementById('task-icon').value = legacyIcon.id;
             document.getElementById('task-icon-preview').textContent = legacyIcon.emoji;
             document.getElementById('task-icon-label').textContent = legacyIcon.name;
             selectedTaskIcon = legacyIcon;
           } else {
-            document.getElementById('task-icon-preview').textContent = iconId;
-            document.getElementById('task-icon-label').textContent = 'Custom icon';
+            document.getElementById('task-icon').value = '';
+            document.getElementById('task-icon-preview').textContent = '-';
+            document.getElementById('task-icon-label').textContent = 'Unknown icon';
             selectedTaskIcon = null;
           }
         }
       } else {
+        document.getElementById('task-icon').value = '';
         document.getElementById('task-icon-preview').textContent = '-';
         document.getElementById('task-icon-label').textContent = 'Choose an icon...';
         selectedTaskIcon = null;
