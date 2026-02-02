@@ -5,14 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.1] - 2026-01-31
+## [1.2.1] - 2026-02-01
 
 ### Fixed
-- **Improved error handling for save operations** (`src/public/admin.html`)
+- **Task user assignment UI not showing visual feedback** (`src/public/admin.html`)
+  - Fixed hidden checkbox technique: changed from `display: none` to `position: absolute; opacity: 0` so label clicks properly toggle checkboxes
+  - Added `position: relative` to parent containers (`.checkbox-item`, `.user-select-item`, `.task-select-item`) for proper absolute positioning
+  - Users can now see blue highlight and checkmark when selecting users in task assignment modal
+
+- **Icon validation accepting emoji instead of icon ID** (`src/public/admin.html`, `src/validators/task.js`)
+  - Frontend now sends icon ID (e.g., `pet-walk`) instead of emoji (e.g., `🐕`) when saving tasks
+  - Backend validator accepts both icon IDs and emojis for backwards compatibility with existing data
+  - Added legacy emoji-to-ID conversion when loading existing tasks for editing
+
+- **Improved error handling for save operations** (`src/public/admin.html`, `src/routes/admin.js`)
   - Save operation catch blocks now display actual error messages instead of generic "Failed to save"
   - Added try-catch around error response JSON parsing to handle non-JSON server errors
   - Added session expiry detection with helpful "Session expired" message and automatic redirect
   - Added debug console.log for save operations to help diagnose issues
+  - Server error responses now include error details for debugging
 
 ## [1.2.0] - 2026-01-30
 
