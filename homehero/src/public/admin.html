@@ -2339,7 +2339,9 @@
         if (!response.ok) {
           try {
             var err = await response.json();
-            alert('Error: ' + (err.details ? err.details.join(', ') : err.error));
+            var details = err.details;
+            if (Array.isArray(details)) details = details.join(', ');
+            alert('Error: ' + (details || err.error));
           } catch (parseErr) {
             alert('Error: Server returned status ' + response.status);
           }
@@ -2613,7 +2615,9 @@
         if (!response.ok) {
           try {
             var err = await response.json();
-            alert('Error: ' + (err.details ? err.details.join(', ') : err.error));
+            var details = err.details;
+            if (Array.isArray(details)) details = details.join(', ');
+            alert('Error: ' + (details || err.error));
           } catch (parseErr) {
             alert('Error: Server returned status ' + response.status);
           }
@@ -3125,7 +3129,9 @@
         if (!response.ok) {
           try {
             var err = await response.json();
-            alert('Error: ' + (err.details ? err.details.join(', ') : err.error));
+            var details = err.details;
+            if (Array.isArray(details)) details = details.join(', ');
+            alert('Error: ' + (details || err.error));
           } catch (parseErr) {
             alert('Error: Server returned status ' + response.status);
           }

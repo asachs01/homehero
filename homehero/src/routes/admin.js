@@ -210,7 +210,7 @@ router.post('/api/admin/tasks', async (req, res) => {
     res.status(201).json(task);
   } catch (err) {
     console.error('Error creating task:', err);
-    res.status(500).json({ error: 'Failed to create task' });
+    res.status(500).json({ error: 'Failed to create task', details: err.message });
   }
 });
 
@@ -244,7 +244,7 @@ router.put('/api/admin/tasks/:id', async (req, res) => {
     res.json(task);
   } catch (err) {
     console.error('Error updating task:', err);
-    res.status(500).json({ error: 'Failed to update task' });
+    res.status(500).json({ error: 'Failed to update task', details: err.message });
   }
 });
 
